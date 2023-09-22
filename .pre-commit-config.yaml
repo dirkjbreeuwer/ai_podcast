@@ -1,0 +1,19 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-ast
+    -   id: check-merge-conflict
+
+-   repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+    -   id: black
+
+-   repo: https://github.com/pre-commit/mirrors-pylint
+    rev: v3.0.0a5
+    hooks:
+    -   id: pylint
+
+# Add more hooks as needed
