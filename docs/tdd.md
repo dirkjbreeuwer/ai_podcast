@@ -38,362 +38,360 @@ The system is architected as a set of distinct, loosely coupled modules, ensurin
 
 * Podcast Script Generator: This module retrieves the summarized content and adapts it into a format that's coherent and optimized for podcast narratives.
 
-## 3.1 Web Crawlers
+## 3.1 Web Crawlers Module
 
-### 3.1.1 Design:
+### 3.1.1 Design and Purpose
 
-**Objective**: To fetch articles from the web, extract relevant data, and standardize the outputs into a uniform structure suitable for downstream processing.
+#### Purpose:
+To fetch, extract, and standardize articles from the web, making them suitable for downstream processing.
+
+#### Scope:
+Scraping from diverse online platforms, transforming the results into a uniform structure, and ensuring reliability and efficiency in data collection.
+
+#### Primary Objective:
+Seamless and consistent scraping of articles across various web sources.
+
+#### Secondary Objectives:
+- Standardization of the scraped data.
+- Ensuring compatibility with downstream modules.
+
+### 3.1.2 Key Components
 
 #### Data Structures:
 
-- **Article**: 
-  A structured representation for holding attributes like URL, title, content, and associated metadata of each scraped article.
+- **Article**:
+  - **Description**: Holds attributes like URL, title, content, and associated metadata of each scraped article.
+  - **Relationships**: Serves as the primary data type for the downstream storage and processing modules.
 
-#### Classes and Their Roles:
+#### Classes/Interfaces:
 
-- **Crawler**: 
-  The foundational class for all web crawlers to ensure consistency and standardization.
-  
-- **ApifyArticleCrawler**: 
-  Designed for the Apify platform, inheriting from the Crawler class.
-  
-- **CrawlerOutputTransformer**: 
-  Ensures the outputs from diverse crawlers are transformed and standardized into the `Article` data structure.
-  
-- **ApifyCrawlerOutputTransformer**: 
-  Manages unique outputs from Apify, ensuring they are also transformed to fit the `Article` data structure.
+- **Crawler**:
+  - **Role**: Foundation for web crawlers ensuring consistency.
+  - **Attributes**:
+    - **Name**: Specific configurations for scraping. Type: `dict`.
+  - **Methods**:
+    - `fetch()`: Single article retrieval.
+    - `batch_fetch()`: Multiple article retrieval.
+    - `get_status()`: Current status of the crawler.
 
-### 3.1.2 Implementation:
+- **ApifyArticleCrawler**:
+  - **Role**: Crawler tailored for the Apify platform.
+  - **Methods**:
+    - `set_options()`: Configuration setter for Apify.
 
-#### Crawler:
+- **CrawlerOutputTransformer**:
+  - **Role**: Converts diverse crawler outputs into `Article` data type.
+  - **Methods**:
+    - `transform()`: Raw data transformation into `Article`.
 
-- **Methods**:
-  - `fetch()`: Single article fetch based on given criteria.
-  - `batch_fetch()`: Collect multiple articles based on a broader set of criteria or a list of URLs.
-  - `get_status()`: Get the current status of the crawler, e.g., running, idle, error.
+- **ApifyCrawlerOutputTransformer**:
+  - **Role**: Transformation for Apify-specific outputs.
+  - **Methods**:
+    - `transform()`: Apify data transformation into `Article`.
 
-#### ApifyArticleCrawler (inherits from Crawler):
+### 3.1.3 Implementation Details
 
-- **Methods**:
-  - `set_options()`: Specialized for Apify, to provide additional configurations unique to this platform.
+#### Data Structures:
 
-#### CrawlerOutputTransformer:
+- **Article**:
+  - **Pseudo-code**:
+    ```python
+    class Article:
+        def __init__(self, url, title, content, ...):
+            self.url = url
+            self.title = title
+            ...
+    ```
 
-- **Objective**: 
-  Convert various crawler outputs into the standardized `Article` data type.
-  
-- **Methods**:
-  - `transform(raw_data: dict) -> Article`: Converts the raw output of a crawl into the `Article` data type.
+#### Classes/Interfaces:
 
-#### ApifyCrawlerOutputTransformer (inherits from CrawlerOutputTransformer):
+- **ApifyCrawlerOutputTransformer**:
+  - **Attributes**:
+    - **raw_data**: Type: `dict`. Contains the raw outputs from Apify's scrape.
+  - **Methods**:
+    - **transform**:
+      - **Purpose**: Converts Apify's output to the `Article` structure.
+      - **Parameters**: `raw_data` (Type: `dict`).
+      - **Return Type**: `Article`.
+      - **Pseudo-code**:
+        ```python
+        def transform(self, raw_data):
+            article = Article(...)
+            return article
+        ```
+      - **Complexity**: Time: O(1) (for the transformation, not considering possible IO operations).
 
-- **Methods**:
-  - `transform(raw_data: dict) -> Article`: Specific transformation logic for Apify's outputs to the `Article` data type.
 
-**Transformation Logic for ApifyCrawlerOutputTransformer**:
-
-```python
-def transform(self, raw_data: dict) -> Article:
-    """
-    Convert Apify's raw JSON output to the Article data type.
-    """
-    article = Article(
-        article_id=None,  # This could be auto-incremented or generated during database insertion.
-        md5_id=hashlib.md5(raw_data["url"].encode()).hexdigest(),
-        url=raw_data["url"],
-        title=raw_data["title"],
-        content=raw_data["text"],
-        domain=raw_data["loadedDomain"],
-        date=raw_data["date"],
-        author=raw_data["author"],
-        description=raw_data["description"],
-        keywords=raw_data["keywords"],
-        lang=raw_data["lang"],
-        tags=raw_data["tags"],
-        summary=""  # This will be generated separately
-    )
-    return article
-```
 
 ---
 
-## 3.2 Data Storage
+## 3.2 Data Storage Module
 
-### 3.2.1 Relational Database Storage
+### 3.2.1 Design and Purpose
 
-#### 3.2.1.1 Design
+#### Purpose:
+To persist articles into appropriate storage mechanisms, facilitating efficient retrieval, update, and relationship management, and to ensure vectorized data is stored for similarity search.
 
-**Objective**: To persist the articles of the `Article` data type transformed by the crawler into a relational database, ensuring their efficient retrieval, update, and relationship management.
+#### Scope:
+Incorporates both relational database storage for structured articles and vector database storage for vectorized article embeddings.
 
-- **Article and Metadata Storage**:
-  - **Relational Database**: The choice of PostgreSQL is influenced by its robustness in handling structured data and complex relationships, making it an excellent choice for articles, authors, sources, and tags storage.
-  - **Flagging Mechanism**: The need for an `is_vectorized` column in the Articles schema stems from the requirement to track which articles have already been processed and stored in ChromaDB.
-  - **Schemas**: These are designed to represent the structure and relationships of our primary entities:
-    - Articles: Capturing the essence of each article and its processing status.
-    - Authors: Representing individual or group authors.
-    - Sources: Denoting where the article originated.
-    - Tags: Categories or themes associated with an article.
-    - Article_Tag and Article_Author: Bridging tables to manage many-to-many relationships.
+#### Primary Objective:
+Reliable storage of articles and their associated embeddings in appropriate databases.
 
-#### 3.2.1.2 Implementation
+#### Secondary Objectives:
+- Efficient retrieval and update operations.
+- Seamless integration between structured and vectorized storage mechanisms.
 
-- **DatabaseManager Class**: This class provides foundational operations to interact with the relational database, ensuring encapsulation and separation of concerns.
+### 3.2.2 Key Components
 
-  - `save(article: Article)`: Persists a new article into the database, initializing the `is_vectorized` status as `False`.
-  
-  - `update(article: Article)`: Updates an existing article's attributes in the database.
-  
-  - `delete(article_id: int)`: Removes an article based on its ID.
-  
-  - `find_by_id(article_id: int) -> Article`: Retrieves a specific article based on its ID.
-  
-  - `find_all() -> List[Article]`: Retrieves all articles from the database.
-  
-  - `find_by_criteria(criteria: dict) -> List[Article]`: Retrieves articles based on specified criteria (e.g., articles from a specific source or date range).
-  
-  - `mark_as_vectorized(article_id: int)`: Updates the `is_vectorized` flag to `True` for a given article.
-  
-  - `is_vectorized(article_id: int) -> bool`: Checks if a given article has been vectorized.
-  
-  - `batch_save(articles: List[Article])`: Persists multiple articles in a single operation, useful for bulk insertions.
+#### Data Structures:
 
-- **PostgreSQLManager Class** (inherits from DatabaseManager): Tailored for PostgreSQL-specific operations, this class ensures that the generic CRUD operations defined in `DatabaseManager` are implemented in a way that's optimized for PostgreSQL.
+- **Article (Refer to 3.1 for definition)**:
+  - **Description**: A standardized representation for articles scraped from the web. Used here for persistence in the database.
+  - **Relationships**: Associated with authors, sources, and tags.
 
-### 3.2.2 Article Chunking and Embedding
+#### Classes/Interfaces:
 
-#### 3.2.2.1 Design
+- **DatabaseManager**:
+  - **Role**: Provides foundational database interactions.
+  - **Methods**:
+    - `save()`: Persist a new article.
+    - `update()`: Modify an existing article.
+    - `delete()`: Remove an article by ID.
+    - `find_by_id()`: Retrieve a specific article.
+    - `find_all()`: Retrieve all articles.
+    - `find_by_criteria()`: Retrieve articles by certain criteria.
+    - `mark_as_vectorized()`: Set the vectorization flag for an article.
+    - `is_vectorized()`: Check vectorization status for an article.
+    - `batch_save()`: Persist multiple articles.
 
-To facilitate efficient storage and retrieval from the vector database, articles that have the `is_vectorized` flag set to `False` will be chunked and then embedded.
+- **PostgreSQLManager**:
+  - **Role**: Specialized operations for PostgreSQL.
 
-- **ChunkService Class**:
-  - `split_into_chunks(article: Article)`: Splits an article into smaller textual chunks.
-- **EmbeddingService Class**:
-  - `generate_embedding(text_chunk: str)`: Produces embeddings from textual chunks using LLMs.
+- **ChunkService**:
+  - **Role**: Facilitate article chunking.
+  - **Methods**:
+    - `split_into_chunks()`: Divide an article into smaller parts.
 
-#### 3.2.2.2 Implementation
+- **EmbeddingService**:
+  - **Role**: Generate embeddings from text.
+  - **Methods**:
+    - `generate_embedding()`: Produce embeddings using LLMs.
 
-Embeddings are generated for each chunk of articles flagged with `is_vectorized = False` and prepared for storage in the vector database.
+- **VectorDBManager**:
+  - **Role**: Interface for vector database operations.
 
-### 3.2.3 Vector Database Storage (ChromaDB)
+- **ChromaDBManager**:
+  - **Role**: Operations specific to ChromaDB.
 
-#### 3.2.3.1 Design
-
-Once embeddings are generated, they are stored in a vector database to facilitate efficient similarity search operations.
-
-- **VectorDBManager Class**: Abstraction over the specific vector database operations.
-- **ChromaDBManager** (inherits from VectorDBManager): Methods tailored for ChromaDB-specific operations.
-
-#### 3.2.3.2 Implementation
-
-The generated embeddings are stored in ChromaDB, allowing for efficient retrieval based on similarity search.
+### 3.2.3 Implementation Details
 
 
----
+#### Classes/Interfaces:
+
+- **DatabaseManager**:
+  - **Methods**:
+    - **save**:
+      - **Purpose**: Persist a new article.
+      - **Parameters**: `article` (Type: `Article`).
+      - **Return Type**: None.
+    - (Continue with other methods similarly...)
+
+- **ChunkService**:
+  - **Methods**:
+    - **split_into_chunks**:
+      - **Purpose**: Split an article into smaller textual chunks.
+      - **Parameters**: `article` (Type: `Article`).
+      - **Return Type**: `List[str]`.
+
+- **EmbeddingService**:
+  - **Methods**:
+    - **generate_embedding**:
+      - **Purpose**: Generate embeddings for a text chunk.
+      - **Parameters**: `text_chunk` (Type: `str`).
+      - **Return Type**: `Embedding` (or appropriate data type).
+
+
 ## 3.3 Language Models
 
-### 3.3.1 Design
+### 3.3.1 Design and Purpose
 
-**Objective**: To enable seamless and consistent interaction with various Language Learning Models (LLMs) for tasks such as summarizing articles or generating scripts.
+**Purpose**: Facilitate the interaction with various Language Learning Models (LLMs) to perform tasks such as summarization and script generation.
 
-#### PromptBuilder
+**Scope**: This module encompasses the creation of prompts, as well as interaction logic with different LLMs, namely Huggingface and OpenAI platforms.
 
-- **Purpose**:
-  - To create and manage the prompts that are used to invoke the LLMs.
-  - Ensuring that prompts are appropriately structured is crucial for obtaining accurate and relevant results from the models.
+**Primary Objective**: Enable seamless interaction with LLMs, ensuring consistency and accuracy in tasks.
 
-#### AbstractLLMInvoker
+**Secondary Objectives**:
+- Standardize the invocation of various LLMs through a unified interface.
+- Provide tailored interactions for specific LLM platforms.
 
-- **Purpose**:
-  - Acts as a blueprint for all LLM interactions.
-  - It ensures a standardized method set, which allows for flexibility in using different LLMs while maintaining consistency in method calls.
+### 3.3.2 Key Components
 
-#### HuggingfaceInvoker
+#### Classes/Interfaces:
 
-- **Purpose**:
-  - Specific interaction logic for Huggingface LLMs.
-  - Ensures that any unique requirements or behaviors of the Huggingface platform are addressed.
+- **PromptBuilder**:
+  - **Role**: Manage the creation of prompts to invoke LLMs.
+  - **Methods**:
+    - `build_summary_prompt`: Craft a prompt for summarization tasks.
+    - `build_script_prompt`: Design a prompt for script generation.
 
-#### OpenAIInvoker
+- **AbstractLLMInvoker**:
+  - **Role**: Serve as the foundational structure for all LLM interactions, ensuring consistency in method calls.
+  - **Methods**:
+    - `invoke`: A generalized method to interact with any LLM.
 
-- **Purpose**:
-  - Specific interaction logic for OpenAI LLMs.
-  - Tailors interactions to meet the requirements and best practices of the OpenAI platform.
+- **HuggingfaceInvoker (inherits from AbstractLLMInvoker)**:
+  - **Role**: Define specific interactions for Huggingface LLMs.
+  - **Attributes**:
+    - **Technologies**: Utilize Huggingface Transformers Library.
+  - **Methods**:
+    - `invoke`: Implement the interaction tailored for Huggingface.
 
-### 3.3.2 Implementation
+- **OpenAIInvoker (inherits from AbstractLLMInvoker)**:
+  - **Role**: Define specific interactions for OpenAI LLMs.
+  - **Attributes**:
+    - **Technologies**: Leverage OpenAI API.
+  - **Methods**:
+    - `invoke`: Tailor the method for OpenAI's requirements.
 
-#### PromptBuilder
+### 3.3.3 Implementation Details
 
-- **Methods**:
-  - `build_summary_prompt(article_content: str) -> str`: Creates a prompt suitable for summarization tasks.
-  - `build_script_prompt(article_content: str) -> str`: Crafts a prompt for generating scripts.
+#### Classes/Interfaces:
 
-#### AbstractLLMInvoker
+- **PromptBuilder**:
+  - **Methods**:
+    - `build_summary_prompt(article_content: str) -> str`: Create a prompt suitable for summarization.
+    - `build_script_prompt(article_content: str) -> str`: Craft a prompt for script generation.
 
-- **Methods**:
-  - `invoke(prompt: str) -> str`: An abstract method to invoke any LLM. Specific LLMs will provide their own implementation of this method.
+- **AbstractLLMInvoker**:
+  - **Methods**:
+    - `invoke(prompt: str) -> str`: A method to be implemented by each specific LLM invoker for model interaction.
 
-#### HuggingfaceInvoker (inherits from `AbstractLLMInvoker`):
+- **HuggingfaceInvoker**:
+  - **Methods**:
+    - `invoke`: Specific to Huggingface platform, it accesses and invokes models using the Transformers Library.
 
-- **Technologies**:
-  - Utilizes the Huggingface Transformers Library for accessing and invoking models.
-  - Implement the `invoke` method tailored for the Huggingface platform.
+- **OpenAIInvoker**:
+  - **Methods**:
+    - `invoke`: Specifically optimized for OpenAI's model invocation requirements.
 
-#### OpenAIInvoker (inherits from `AbstractLLMInvoker`):
+### 3.3.4 Rationale
 
-- **Technologies**:
-  - Leverages the OpenAI API for model invocation.
-  - Provides a specific `invoke` method optimized for OpenAI's requirements.
-
-### 3.3.3 Rationale
-
-- **PromptBuilder**: Provides a centralized place to manage the prompt logic. This ensures consistency and ease of modifications.
-- **AbstractLLMInvoker**: Ensures flexibility. If a new LLM platform is added in the future, we can extend this abstract class, ensuring seamless integration without major changes to the existing system.
-- **Separate Invokers**: Each LLM provider might have different API structures, nuances, and error handling. Keeping them in separate classes ensures clarity and maintainability.
+- **PromptBuilder**: Centralize prompt management for consistency and modifiability.
+- **AbstractLLMInvoker**: Offers a flexible structure for future LLM platform extensions, ensuring integration without major system alterations.
+- **Dedicated Invokers**: Recognizes and accommodates the nuances and unique structures of each LLM provider, enhancing clarity and maintainability.
 
 ## 3.4 Search and Retrieval Service
 
-### 3.4.1 Design
+### 3.4.1 Design and Purpose
 
-#### Objective
-Enable users to query and retrieve articles and summaries based on content and metadata, leveraging vector search engines to ensure that the results are relevant and comprehensive.
+**Purpose**: Empower users to efficiently and comprehensively query and fetch articles, summaries, and specific content based on content and metadata.
 
-#### **SearchEngine**
+**Scope**: This module encompasses the functionalities of executing search queries on stored articles and fetching various components (full articles, chunks, summaries) of the retrieved articles.
 
-- **Purpose**:
-  - Acts as the primary interface for executing search queries against stored articles.
-  - Uses vector embeddings to index and retrieve articles, ensuring content similarity and relevance.
+**Primary Objective**: Deliver relevant search results using vector embeddings and provide options for content retrieval.
 
-- **Structure**:
-  - Methods:
-    - `similarity_search(query: str) -> List[Article]`: Basic implementation to find articles most similar to the given query.
-    - `advanced_search(query: str, metadata: dict) -> List[Article]`: Enhanced search capability to include additional filters and conditions based on article metadata.
+**Secondary Objectives**:
+- Allow users to refine search based on content and metadata.
+- Offer quick and efficient access to different segments of the content.
 
-#### **ArticleRetrieval**
+### 3.4.2 Key Components
 
-- **Purpose**:
-  - Fetches the full articles, article chunks, or summaries based on the search results.
+#### Classes/Interfaces:
 
-- **Structure**:
-  - Methods:
-    - `retrieve_full_articles(article_ids: List[int]) -> List[Article]`: Returns full articles based on provided article IDs.
-    - `retrieve_article_chunks(article_ids: List[int]) -> List[str]`: Extracts and returns specific sections or chunks of articles.
-    - `retrieve_summaries(article_ids: List[int]) -> List[str]`: Provides the summaries of the given articles.
+- **SearchEngine**:
+  - **Role**: Primary interface for executing vector-based search queries on stored articles.
+  - **Methods**:
+    - `similarity_search`: Conduct a basic similarity search on articles.
+    - `advanced_search`: Perform an enhanced search based on content and metadata.
 
-### 3.4.2 Implementation
+- **ArticleRetrieval**:
+  - **Role**: Fetch various components of articles (full, chunks, summaries) based on search results.
+  - **Methods**:
+    - `retrieve_full_articles`: Fetch complete articles using given IDs.
+    - `retrieve_article_chunks`: Extract specific segments from articles.
+    - `retrieve_summaries`: Get pre-generated article summaries.
 
-#### **SearchEngine**
+### 3.4.3 Implementation Details
 
-- **Technologies**:
-  - Vector search engines such as Faiss or Annoy to facilitate efficient similarity search.
-  - Vector embeddings generated from articles using pre-trained language models to ensure effective indexing.
+#### Classes/Interfaces:
 
-- **Methods**:
-  - `similarity_search(query: str) -> List[Article]`: Transforms the query into a vector embedding and searches for the nearest article embeddings in the index.
-  - `advanced_search(query: str, metadata: dict) -> List[Article]`: Combines the similarity search with filters based on provided metadata to refine the search results.
+- **SearchEngine**:
+  - **Attributes**:
+    - **Technologies**: Leverage vector search engines (e.g., Faiss, Annoy) and pre-trained language models for embeddings.
+  - **Methods**:
+    - `similarity_search(query: str) -> List[Article]`: Convert query to vector embedding, search for nearest article embeddings.
+    - `advanced_search(query: str, metadata: dict) -> List[Article]`: Combine similarity search with metadata filters to narrow results.
 
-#### **ArticleRetrieval**
+- **ArticleRetrieval**:
+  - **Attributes**:
+    - **Database Queries**: Efficiently fetch full articles or specific sections based on returned article IDs from the search engine.
+  - **Methods**:
+    - `retrieve_full_articles(article_ids: List[int]) -> List[Article]`: Fetch directly from the database using primary keys.
+    - `retrieve_article_chunks(article_ids: List[int]) -> List[str]`: Use text processing to extract required sections.
+    - `retrieve_summaries(article_ids: List[int]) -> List[str]`: Access pre-generated article summaries from the database.
 
-- **Database Queries**:
-  - Retrieve full articles or specific sections based on the returned article IDs from the search engine.
-  - Utilize efficient querying mechanisms to ensure fast retrieval of large volumes of text data.
+### 3.4.4 Rationale
 
-- **Methods**:
-  - `retrieve_full_articles(article_ids: List[int]) -> List[Article]`: Direct database fetch based on primary keys.
-  - `retrieve_article_chunks(article_ids: List[int]) -> List[str]`: Uses text processing to extract and return specific sections of the articles.
-  - `retrieve_summaries(article_ids: List[int]) -> List[str]`: Fetches the pre-generated summaries of articles from the database.
+- **Vector-based Search**: Vector search identifies similar articles even without exact keyword matches. It understands context and semantic similarities by translating queries and articles into shared vector spaces.
 
-### 3.4.3 Rationale
+- **Advanced Search Capabilities**: Alongside content similarity, users can filter results using metadata (e.g., date, author), enhancing the search experience.
 
-- **Vector-based Search**:
-  The core advantage of vector-based search lies in its ability to identify similar articles even if the exact keywords or phrases aren't present. By translating both the query and the articles into a shared vector space, the system can identify content that is contextually and semantically related.
-
-- **Advanced Search Capabilities**:
-  While content similarity is crucial, there are scenarios where users may want to filter or prioritize results based on metadata (e.g., publication date, author, or source). The system's design provides this flexibility.
-
-- **Multiple Retrieval Options**:
-  Depending on the user's needs, they might want the full article, a concise summary, or specific sections of the content. Offering these options enhances user experience and utility.
+- **Multiple Retrieval Options**: Users might need complete articles, specific sections, or summaries. Providing these options ensures a comprehensive user experience.
 
 
-## 3.4 Podcast Script Generation Module
 
-### 3.4.1 Design
+## 3.5 Podcast Script Generation Module
 
-#### **ScriptGenerator**
+### 3.5.1 Design and Purpose
 
-- **Role**: To convert sets of summaries into coherent podcast scripts tailored to user preferences and guidelines.
-  - **Why**: To produce content that can be easily vocalized, maintaining coherence and ensuring it aligns with user requirements.
+**Purpose**: To convert summarized content into coherent, user-tailored podcast scripts that can be vocalized effortlessly while adhering to set guidelines and styles.
 
-#### **PromptBuilder for ScriptGeneration**
+**Scope**: The module encompasses functionalities to craft podcast scripts based on user preferences, integrating Large Language Models for script generation, and adjusting outputs to desired specifications.
 
-- **Role**: To construct appropriate prompts that guide the LLM in script generation, ensuring the final output adheres to the set guidelines and desired style.
-  - **Why**: The effectiveness of the LLM is largely dependent on the clarity and specificity of the prompts it receives. A structured and well-defined prompt will guide the model to produce the desired output.
+**Primary Objective**: Produce podcast scripts from sets of summaries in a coherent manner while staying aligned with user requirements.
 
-#### **Considerations for Expansion**:
+**Secondary Objectives**:
+- Ensure that scripts can be fine-tuned for desired durations.
+- Integrate transitional phrases for seamless content flow.
+- Attribute content to the original sources.
+- Make the system adaptable to user-specified guidelines, styles, and directives.
+- Implement a review mechanism to iterate and improve script outputs.
 
-1. **Duration**: Podcast scripts should be customizable to a certain duration, typically aiming for less than 5 minutes.
-2. **Transitional Phrases**: These interlink the different sections of the podcast. Leveraging the LLM's strength here is vital.
-3. **Source Attribution**: An essential part of any content, ensuring that the original sources of the summaries are appropriately credited.
-4. **User Input**: The system should be adaptable, allowing users to define guidelines, styles, and other directives for the script.
-5. **Review and Iteration**: The system should be flexible enough to allow for improvements, especially in areas where user feedback can guide development.
+### 3.5.2 Key Components
 
-### 3.4.2 Implementation
+#### Classes/Interfaces:
 
-#### **ScriptGenerator Class**:
+- **ScriptGenerator**:
+  - **Role**: Main class to handle the transformation of summaries into podcast scripts based on given configurations.
+  - **Attributes**:
+    - `llm_invoker`: Mechanism to call the LLM for script generation.
+  - **Methods**:
+    - `generate_script`: Converts summaries into podcast scripts.
+    - `_estimate_word_count`: Calculates expected word count for given duration.
+    - `_adjust_script_length`: Modifies script length to match target word count.
 
-Handles the actual process of taking summaries and desired configurations, and producing the podcast script.
+- **PromptBuilder for ScriptGeneration**:
+  - **Role**: Constructs LLM prompts for script generation ensuring desired styles and guidelines are respected.
+  - **Methods**:
+    - `build_podcast_script_prompt`: Creates a suitable prompt to guide LLM in generating the podcast script.
 
-```python
-class ScriptGenerator:
+### 3.5.3 Implementation Details
 
-    def __init__(self, llm_invoker):
-        self.llm_invoker = llm_invoker
-    
-    def generate_script(self, summaries: List[str], style: str = "conversational", duration: int = 5, include_intro_conclusion: bool = True, source_attribution: bool = True) -> str:
-        
-        # Estimate the word count based on the desired duration
-        target_word_count = self._estimate_word_count(duration)
-        
-        # Use PromptBuilder to create an appropriate prompt
-        prompt = PromptBuilder.build_podcast_script_prompt(summaries, style, include_intro_conclusion, source_attribution)
-        
-        # Use the LLM to generate the script
-        raw_script = self.llm_invoker.invoke(prompt)
-        
-        # Trim or adjust the script based on the target word count
-        adjusted_script = self._adjust_script_length(raw_script, target_word_count)
-        
-        return adjusted_script
+#### Classes/Interfaces:
 
-    def _estimate_word_count(self, duration: int) -> int:
-        # Assuming an average reading speed of 150 words per minute
-        return duration * 150
+- **ScriptGenerator**:
+  - **Attributes**:
+    - `llm_invoker`: Interface for LLM invocation, can be implementations such as HuggingfaceInvoker or OpenAIInvoker.
+  - **Methods**:
+    - `generate_script(summaries: List[str], style: str = "conversational", duration: int = 5, include_intro_conclusion: bool = True, source_attribution: bool = True) -> str`: Generates a podcast script from summaries based on style, duration, and other preferences. Integrates with the LLM to get the raw script and then adjusts its length and structure as per user specifications.
+    - `_estimate_word_count(duration: int) -> int`: Approximates the word count based on desired script duration.
+    - `_adjust_script_length(script: str, target_word_count: int) -> str`: Adapts the script to fit the desired word count.
 
-    def _adjust_script_length(self, script: str, target_word_count: int) -> str:
-        # Simplistic approach: Split the script and keep only the required number of words.
-        # Future implementations can be smarter about this.
-        words = script.split()
-        return ' '.join(words[:target_word_count])
+- **PromptBuilder**:
+  - **Methods**:
+    - `build_podcast_script_prompt(summaries: List[str], style: str, include_intro_conclusion: bool, source_attribution: bool) -> str`: Combines the given summaries into a unified text and crafts an LLM prompt for script generation considering the provided style, introduction, conclusion, and source attribution preferences.
 
 
-class PromptBuilder:
 
-    @staticmethod
-    def build_podcast_script_prompt(summaries: List[str], style: str, include_intro_conclusion: bool, source_attribution: bool) -> str:
-        # Combines the summaries into a single text
-        combined_summaries = ' '.join(summaries)
-
-        # Constructs the prompt
-        prompt = f"Generate a {style} podcast script from the following summaries: {combined_summaries}"
-        
-        if include_intro_conclusion:
-            prompt += " Include an introduction and conclusion."
-        
-        if source_attribution:
-            prompt += " Remember to cite the sources."
-
-        return prompt
-
-```
-
-#### Integration with LLM:
-The actual generation of the podcast script requires integration with Large Language Models. The generated prompt is passed to a specific LLM invoker, such as HuggingfaceInvoker or OpenAIInvoker, which then returns the raw script. This raw script undergoes further processing to adjust its length and structure to match user specifications.
