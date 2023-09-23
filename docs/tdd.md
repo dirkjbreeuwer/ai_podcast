@@ -60,7 +60,7 @@ Seamless and consistent scraping of articles across various web sources.
 #### Data Structures:
 
 - **Article**:
-  - **Description**: Holds attributes like URL, title, content, and associated metadata of each scraped article.
+  - **Description**: Holds attributes like URL, title, text, and associated metadata of each scraped article.
   - **Relationships**: Serves as the primary data type for the downstream storage and processing modules.
 
 #### Classes/Interfaces:
@@ -97,7 +97,7 @@ Seamless and consistent scraping of articles across various web sources.
   - **Pseudo-code**:
     ```python
     class Article:
-        def __init__(self, url, title, content, ...):
+        def __init__(self, url, title, text, ...):
             self.url = url
             self.title = title
             ...
