@@ -2,6 +2,7 @@
 This module defines the data structure for representing an article scraped from the web.
 """
 from typing import List, Dict, Optional
+import uuid
 
 
 # pylint: disable=R0902
@@ -22,6 +23,7 @@ class Article:
         image (Optional[str]): The main image URL of the article.
         text (str): The main text content of the article.
         id (str): A unique identifier for the article.
+        is_vectorized (bool): Indicates if the article has been vectorized.
     """
 
     # Disabling the too many arguments warning because we want Article
@@ -31,8 +33,8 @@ class Article:
         self,
         title: str,
         text: str,
-        _id: str,
         date: str,
+        _id: Optional[str] = None,
         url: Optional[str] = None,
         loaded_domain: Optional[str] = None,
         author: Optional[List[str]] = None,
@@ -42,6 +44,7 @@ class Article:
         tags: Optional[List[str]] = None,
         image: Optional[str] = None,
         videos: Optional[List[Dict[str, str]]] = None,
+        is_vectorized: bool = False,  # Add this line
     ):
         """Initializes an Article instance with provided attributes."""
         self.url = url
@@ -56,7 +59,8 @@ class Article:
         self.image = image
         self.videos = videos
         self.text = text
-        self._id = _id
+        self._id = _id or str(uuid.uuid4())
+        self.is_vectorized = is_vectorized  # And this line
 
     def __repr__(self):
         """Returns a string representation of the Article instance."""
@@ -66,3 +70,13 @@ class Article:
         """Returns a summary of the article (this is just a placeholder
         and should be implemented properly)"""
         return self.text[:100] + "..."
+
+    @property
+    def article_id(self):
+        """Property to get the article's ID."""
+        return self._id
+
+    @article_id.setter
+    def article_id(self, value):
+        """Setter for the article's ID."""
+        self._id = value
