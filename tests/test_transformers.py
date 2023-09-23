@@ -9,7 +9,7 @@ Classes:
     TestApifyCrawlerOutputTransformer: Contains tests for the ApifyCrawlerOutputTransformer class.
 
 Usage:
-    python -m unittest path_to_this_module
+    pytest path_to_this_module
 """
 
 import unittest

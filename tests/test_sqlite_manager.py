@@ -5,7 +5,7 @@ This module contains unit tests that validate the functionality of the SQLiteMan
 ensuring that CRUD operations and other database interactions work as expected.
 
 Usage:
-    python -m unittest path_to_this_module
+    pytest path_to_this_module
 
 """
 

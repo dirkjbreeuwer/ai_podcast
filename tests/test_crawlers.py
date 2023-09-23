@@ -1,5 +1,9 @@
 """
 Unit test for testing the ApifyArticleCrawler class.
+
+Usage:
+    pytest path_to_this_module
+
 """
 import unittest
 
