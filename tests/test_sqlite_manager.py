@@ -11,7 +11,7 @@ Usage:
 
 import unittest
 from src.crawlers.data_structures.article import Article
-from src.storage.sqlite_manager import SQLiteManager
+from src.storage.databases.sqlite_manager import SQLiteManager
 
 
 class TestSQLiteManager(unittest.TestCase):
