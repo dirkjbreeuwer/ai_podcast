@@ -8,6 +8,7 @@ Classes:
     - SQLiteManager: Handles CRUD operations and other database interactions for SQLite.
 """
 
+from typing import Optional
 import sqlite3
 from src.crawlers.data_structures.article import Article
 from .database_manager import DatabaseManager
@@ -98,9 +99,15 @@ class SQLiteManager(DatabaseManager):
             )
         return None
 
-    def find_all(self) -> list[Article]:
+    def find_all(self, limit: Optional[int] = None) -> list[Article]:
         # pylint: disable=line-too-long
+        # Base query
         query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized FROM articles"
+
+        # If a limit is provided, append the LIMIT clause to the query
+        if limit is not None:
+            query += f" LIMIT {limit}"
+
         self.cursor.execute(query)
         results = self.cursor.fetchall()
         return [
