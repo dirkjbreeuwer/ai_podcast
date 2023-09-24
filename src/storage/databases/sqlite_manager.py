@@ -179,6 +179,38 @@ class SQLiteManager(DatabaseManager):
         self.cursor.executemany(query, values)
         self.conn.commit()
 
+    def initialize_schema(self):
+        """
+        Initialize the SQLite database schema.
+        Create the articles table if it doesn't exist.
+        """
+        # Check if the articles table exists
+        self.cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='articles'"
+        )
+        if not self.cursor.fetchone():
+            # If the articles table doesn't exist, create it
+            self.cursor.execute(
+                """
+                CREATE TABLE articles (
+                    id INTEGER PRIMARY KEY,
+                    url TEXT,
+                    title TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    date DATE NOT NULL,
+                    loaded_domain TEXT,
+                    author TEXT,
+                    description TEXT,
+                    keywords TEXT,
+                    lang TEXT,
+                    tags TEXT,
+                    image TEXT,
+                    is_vectorized INTEGER DEFAULT 0
+                )
+                """
+            )
+            self.conn.commit()
+
     def close(self):
         """
         Closes the connection to the database.

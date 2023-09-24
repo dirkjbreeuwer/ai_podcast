@@ -10,6 +10,7 @@ Usage:
 """
 
 import unittest
+import os
 from src.crawlers.data_structures.article import Article
 from src.storage.databases.sqlite_manager import SQLiteManager
 
@@ -30,27 +31,7 @@ class TestSQLiteManager(unittest.TestCase):
         for testing purposes before each test case.
         """
         self.db_manager = SQLiteManager(":memory:")
-        # Create the articles table for testing
-        self.db_manager.cursor.execute(
-            """
-            CREATE TABLE articles (
-                id INTEGER PRIMARY KEY,
-                url TEXT,
-                title TEXT NOT NULL,
-                text TEXT NOT NULL,
-                date DATE NOT NULL,
-                loaded_domain TEXT,
-                author TEXT,
-                description TEXT,
-                keywords TEXT,
-                lang TEXT,
-                tags TEXT,
-                image TEXT,
-                is_vectorized INTEGER DEFAULT 0
-            )
-        """
-        )
-        self.db_manager.conn.commit()
+        self.db_manager.initialize_schema()
 
     def tearDown(self):
         """
@@ -121,6 +102,36 @@ class TestSQLiteManager(unittest.TestCase):
         self.assertEqual(articles[1].title, "Test Title 2")
         self.assertEqual(articles[0].is_vectorized, 0)  # First article
         self.assertEqual(articles[1].is_vectorized, 0)  # Second article
+
+    def test_load_database_from_disk(self):
+        """
+        Test the ability to load a database from disk after it has been closed.
+        """
+        # Step 1: Create a SQLite database on disk
+        db_path = "test_db.sqlite3"
+        db_manager = SQLiteManager(db_path)
+        db_manager.initialize_schema()  # Initialize the database
+
+        # Step 2: Add some data to it
+        article = Article(
+            title="Disk Test Title", text="Disk Test Text", date="2023-09-23"
+        )
+        db_manager.save(article)
+
+        # Step 3: Close the database
+        db_manager.close()
+        del db_manager  # Ensure the original manager is no longer in use
+
+        # Step 4: Reopen the database from the disk location
+        reopened_db_manager = SQLiteManager(db_path)
+
+        # Step 5: Verify that the data added in step 2 is still present
+        retrieved_article = reopened_db_manager.find_by_id(1)
+        self.assertEqual(retrieved_article.title, "Disk Test Title")
+        self.assertEqual(retrieved_article.text, "Disk Test Text")
+
+        # Cleanup: Remove the test database file
+        os.remove(db_path)
 
 
 if __name__ == "__main__":
