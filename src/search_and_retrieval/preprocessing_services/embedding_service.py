@@ -46,10 +46,8 @@ class OpenAIEmbeddingService(EmbeddingService):
         if openai_api_key is None:
             load_dotenv()
             openai_api_key = os.getenv("OPENAI_API_KEY")
-            print(f"OpenAI API Key after os.getenv: {openai_api_key}")
             if not openai_api_key:
                 # pylint: disable=line-too-long
-                print(f"OpenAI API Key: {openai_api_key}")
                 raise ValueError(
                     "No OpenAI API key provided and none found in environment variables."
                 )
@@ -89,6 +87,10 @@ class HuggingFaceBGEEmbeddingService(EmbeddingService):
         )
 
     def generate_embedding(self, text_chunk: str) -> List[float]:
+        if not isinstance(text_chunk, str):
+            raise TypeError(
+                f"Expected input of type string, but received type {type(text_chunk)}"
+            )
         return self.embeddings.embed_query(text_chunk)
 
 

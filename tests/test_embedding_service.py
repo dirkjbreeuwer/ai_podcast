@@ -113,6 +113,16 @@ class TestEmbeddingService(unittest.TestCase):
         self.assertTrue(isinstance(embedding, list))
         self.assertTrue(all(isinstance(val, float) for val in embedding))
 
+    def test_huggingface_embedding_non_string_input(self):
+        """
+        Test the behavior of the HuggingFaceBGEEmbeddingService when provided with non-string input.
+        """
+        service = HuggingFaceBGEEmbeddingService()
+
+        # Provide a list as input
+        with self.assertRaises(TypeError):
+            service.generate_embedding(["This should raise an error"])
+
 
 if __name__ == "__main__":
     unittest.main()
