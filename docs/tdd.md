@@ -282,11 +282,11 @@ Reliable storage of articles and their associated embeddings in appropriate data
 - **AbstractLLMInvoker**: Offers a flexible structure for future LLM platform extensions, ensuring integration without major system alterations.
 - **Dedicated Invokers**: Recognizes and accommodates the nuances and unique structures of each LLM provider, enhancing clarity and maintainability.
 
-## 3.4 Search and Retrieval Service
+# 3.4 Search and Retrieval Service
 
-### 3.4.1 Design and Purpose
+## 3.4.1 Design and Purpose
 
-**Purpose**: Empower users to efficiently and comprehensively query and fetch articles, summaries, and specific content based on content and metadata.
+**Purpose**: Empower users to efficiently and comprehensively query and fetch articles based on a query.
 
 **Scope**: This module encompasses the functionalities of executing search queries on stored articles and fetching various components (full articles, chunks, summaries) of the retrieved articles.
 
@@ -296,7 +296,19 @@ Reliable storage of articles and their associated embeddings in appropriate data
 - Allow users to refine search based on content and metadata.
 - Offer quick and efficient access to different segments of the content.
 
-### 3.4.2 Key Components
+## 3.4.2 Evaluation of Options
+
+**Option A**: Use a Vector Database (e.g., Chroma DB) for the Entire Process.
+
+**Option B**: Use Existing Modules for Chunking, Embedding + FAISS for Indexing/Search + SQLite for Retrieval.
+
+After evaluating the pros and cons of each option, we have decided to proceed with **Option B** for the following reasons:
+
+- **Modularity**: Ensures easier updates, optimizations, or replacements of individual modules.
+- **Customization**: Allows for tailored optimizations or adjustments based on specific needs.
+- **Leveraging Existing Work**: Ensures that previous development efforts are not wasted and provides a foundation to build upon.
+
+### 3.4.3 Key Components
 
 #### Classes/Interfaces:
 
@@ -313,7 +325,7 @@ Reliable storage of articles and their associated embeddings in appropriate data
     - `retrieve_article_chunks`: Extract specific segments from articles.
     - `retrieve_summaries`: Get pre-generated article summaries.
 
-### 3.4.3 Implementation Details
+### 3.4.4 Implementation Details
 
 #### Classes/Interfaces:
 
@@ -332,7 +344,7 @@ Reliable storage of articles and their associated embeddings in appropriate data
     - `retrieve_article_chunks(article_ids: List[int]) -> List[str]`: Use text processing to extract required sections.
     - `retrieve_summaries(article_ids: List[int]) -> List[str]`: Access pre-generated article summaries from the database.
 
-### 3.4.4 Rationale
+### 3.4.5 Rationale
 
 - **Vector-based Search**: Vector search identifies similar articles even without exact keyword matches. It understands context and semantic similarities by translating queries and articles into shared vector spaces.
 
@@ -393,5 +405,21 @@ Reliable storage of articles and their associated embeddings in appropriate data
   - **Methods**:
     - `build_podcast_script_prompt(summaries: List[str], style: str, include_intro_conclusion: bool, source_attribution: bool) -> str`: Combines the given summaries into a unified text and crafts an LLM prompt for script generation considering the provided style, introduction, conclusion, and source attribution preferences.
 
+# 4. Complete Workflow
 
+## 4.1 Overview
+
+The system is designed to provide an end-to-end solution for web-based article crawling, processing, storage, search, retrieval, and podcast script generation. The workflow encompasses the following steps:
+
+1. **Article Crawling**: The Crawler class fetches articles from various online sources. The Transformer class then standardizes the crawl output into the `Article` data structure.
+2. **Storage**: The SQLite Manager class handles CRUD operations, storing the articles in a structured manner for efficient retrieval.
+3. **Chunking**: The Chunking service divides articles into smaller textual chunks, facilitating vector search.
+4. **Embedding**: The Embedding service uses LLMs to convert text chunks into vector space, generating embeddings that represent the content.
+5. **Indexing and Search**: Using FAISS, articles are indexed based on their embeddings. When a search query is made, it's also embedded into the same vector space, and a similarity search is executed to find the most relevant articles or chunks.
+6. **Retrieval**: Based on the search results, articles or specific chunks are retrieved from the SQLite database.
+7. **Podcast Script Generation**: Summarized content is transformed into coherent podcast scripts using the Script Generator module. These scripts can then be vocalized or used for other purposes.
+
+## 4.2 Rationale
+
+The workflow is designed to be modular and scalable. Each step is handled by a dedicated module, ensuring that the system can efficiently process large volumes of data and deliver accurate results. The choice of tools and technologies at each step is based on their suitability for the task, ensuring optimal performance and maintainability.
 
