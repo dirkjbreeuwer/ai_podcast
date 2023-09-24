@@ -15,6 +15,7 @@ Note:
     Relies on the `vector_store.py` for the VectorStore abstract base class.
 """
 
+import asyncio
 from typing import List, Tuple, Dict, Optional
 
 # pylint: disable=import-error
@@ -47,10 +48,18 @@ class FAISSStore(VectorStore, SearchEngine):
     ) -> List[Tuple[int, float, Dict[str, str]]]:
         # Perform similarity search using the query vector
         # The method returns both the document IDs and their similarity scores
-        doc_ids, scores = self.index.asimilarity_search(query_vector, k)
+        # Run the coroutine synchronously
 
-        # Fetch metadata for each document ID
-        metadata_list = [self.index.docstore[id] for id in doc_ids]
+        # Using the updated method to get both doc_ids and scores
+        # pylint: disable=line-too-long
+        results_with_scores = asyncio.run(
+            self.index.asimilarity_search_with_relevance_scores(query_vector, k)
+        )
+
+        # Extract doc_ids, scores, and metadata directly from results_with_scores
+        doc_ids = [doc.metadata["id"] for doc, _ in results_with_scores]
+        scores = [score[1] for score in results_with_scores]
+        metadata_list = [doc.metadata for doc, _ in results_with_scores]
 
         # Combine doc_ids, scores, and metadata into a single list of results
         results = list(zip(doc_ids, scores, metadata_list))
