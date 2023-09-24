@@ -12,7 +12,7 @@ Usage:
 
 import unittest
 from src.crawlers.data_structures.article import Article
-from src.storage.services.chunk_service import (
+from src.search_and_retrieval.preprocessing_services.chunk_service import (
     ContentAwareChunkingService,
     LangChainChunkingService,
 )

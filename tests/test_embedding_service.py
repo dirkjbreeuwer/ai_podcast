@@ -8,7 +8,7 @@ ensuring they generate embeddings as expected and handle edge cases appropriatel
 import unittest
 import os
 from unittest.mock import patch
-from src.storage.services.embedding_service import (
+from src.search_and_retrieval.preprocessing_services.embedding_service import (
     OpenAIEmbeddingService,
     FakeEmbeddingService,
     HuggingFaceBGEEmbeddingService,
@@ -38,9 +38,11 @@ class TestEmbeddingService(unittest.TestCase):
         """
         # Mock os.getenv to always return None, and also mock load_dotenv to do nothing
         with patch(
-            "src.storage.services.embedding_service.os.getenv", return_value=None
+            "src.search_and_retrieval.preprocessing_services.embedding_service.os.getenv",
+            return_value=None,
         ), patch(
-            "src.storage.services.embedding_service.load_dotenv", return_value=None
+            "src.search_and_retrieval.preprocessing_services.embedding_service.load_dotenv",
+            return_value=None,
         ):
             # This should raise a ValueError since no API key is provided and none is
             # found in the environment
