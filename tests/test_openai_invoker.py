@@ -60,7 +60,6 @@ class TestOpenAIInvokerIntegration(unittest.TestCase):
 
         # Invoke the OpenAI model with the given prompt
         response = self.invoker.invoke(prompt)
-        print(response)
 
         # Check if the response is not empty (since the actual translation might vary)
         self.assertIsNotNone(response)
