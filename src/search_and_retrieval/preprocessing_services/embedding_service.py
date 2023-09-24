@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from langchain.embeddings import FakeEmbeddings
 from langchain.embeddings import HuggingFaceBgeEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.schema.embeddings import Embeddings
 
 
 # pylint: disable=too-few-public-methods
@@ -89,3 +90,40 @@ class HuggingFaceBGEEmbeddingService(EmbeddingService):
 
     def generate_embedding(self, text_chunk: str) -> List[float]:
         return self.embeddings.embed_query(text_chunk)
+
+
+class HuggingFaceToLangchainEmbeddingAdapter(Embeddings):
+    """
+    Adapter to make HuggingFaceBGEEmbeddingService compatible with LangChain's Embeddings interface.
+
+    Attributes:
+        huggingface_service (HuggingFaceBGEEmbeddingService): The HuggingFace embedding service.
+    """
+
+    def __init__(self, huggingface_service: HuggingFaceBGEEmbeddingService):
+        """Initialize the adapter with a HuggingFace embedding service."""
+        self.huggingface_service = huggingface_service
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        """
+        Embed multiple documents.
+
+        Args:
+            texts (List[str]): List of documents to embed.
+
+        Returns:
+            List[List[float]]: List of embeddings for each document.
+        """
+        return [self.huggingface_service.generate_embedding(text) for text in texts]
+
+    def embed_query(self, text: str) -> List[float]:
+        """
+        Embed a single query.
+
+        Args:
+            text (str): Query text to embed.
+
+        Returns:
+            List[float]: Embedding of the query.
+        """
+        return self.huggingface_service.generate_embedding(text)
