@@ -140,7 +140,6 @@ Reliable storage of articles and their associated embeddings in appropriate data
 
 #### Secondary Objectives:
 - Efficient retrieval and update operations.
-- Seamless integration between structured and vectorized storage mechanisms.
 
 ### 3.2.2 Key Components
 
@@ -168,16 +167,6 @@ Reliable storage of articles and their associated embeddings in appropriate data
 - **PostgreSQLManager**:
   - **Role**: Specialized operations for PostgreSQL.
 
-- **ChunkService**:
-  - **Role**: Facilitate article chunking.
-  - **Methods**:
-    - `split_into_chunks()`: Divide an article into smaller parts.
-
-- **EmbeddingService**:
-  - **Role**: Generate embeddings from text.
-  - **Methods**:
-    - `generate_embedding()`: Produce embeddings using LLMs.
-
 - **VectorDBManager**:
   - **Role**: Interface for vector database operations.
 
@@ -185,7 +174,6 @@ Reliable storage of articles and their associated embeddings in appropriate data
   - **Role**: Operations specific to ChromaDB.
 
 ### 3.2.3 Implementation Details
-
 
 #### Classes/Interfaces:
 
@@ -196,20 +184,6 @@ Reliable storage of articles and their associated embeddings in appropriate data
       - **Parameters**: `article` (Type: `Article`).
       - **Return Type**: None.
     - (Continue with other methods similarly...)
-
-- **ChunkService**:
-  - **Methods**:
-    - **split_into_chunks**:
-      - **Purpose**: Split an article into smaller textual chunks.
-      - **Parameters**: `article` (Type: `Article`).
-      - **Return Type**: `List[str]`.
-
-- **EmbeddingService**:
-  - **Methods**:
-    - **generate_embedding**:
-      - **Purpose**: Generate embeddings for a text chunk.
-      - **Parameters**: `text_chunk` (Type: `str`).
-      - **Return Type**: `Embedding` (or appropriate data type).
 
 
 ## 3.3 Language Models
@@ -282,76 +256,119 @@ Reliable storage of articles and their associated embeddings in appropriate data
 - **AbstractLLMInvoker**: Offers a flexible structure for future LLM platform extensions, ensuring integration without major system alterations.
 - **Dedicated Invokers**: Recognizes and accommodates the nuances and unique structures of each LLM provider, enhancing clarity and maintainability.
 
-# 3.4 Search and Retrieval Service
+## 3.4 Search and Retrieval Service
 
-## 3.4.1 Design and Purpose
+### 3.4.1 Design and Purpose
 
-**Purpose**: Empower users to efficiently and comprehensively query and fetch articles based on a query.
+- **Purpose**: Empower users to efficiently and comprehensively query and fetch articles based on a query.
+- **Scope**: This module encompasses the functionalities of executing search queries on stored articles and fetching various components (full articles, chunks, summaries) of the retrieved articles.
+- **Primary Objective**: Deliver relevant search results using vector embeddings and provide options for content retrieval.
+- **Secondary Objectives**:
+  - Allow users to refine search based on content and metadata.
+  - Offer quick and efficient access to different segments of the content.
 
-**Scope**: This module encompasses the functionalities of executing search queries on stored articles and fetching various components (full articles, chunks, summaries) of the retrieved articles.
+### 3.4.2 Key Components
 
-**Primary Objective**: Deliver relevant search results using vector embeddings and provide options for content retrieval.
+#### Classes and Their Role & Purpose:
 
-**Secondary Objectives**:
-- Allow users to refine search based on content and metadata.
-- Offer quick and efficient access to different segments of the content.
+1. **Vector Store (Abstract Base Class)**
+    - **Role**: Abstracts the operations related to vector embeddings.
+    - **Purpose**: To provide a consistent interface for vector operations regardless of the underlying technology.
 
-## 3.4.2 Evaluation of Options
+2. **FAISS Vector Store**
+    - **Role**: Implements the vector store operations using the FAISS library.
+    - **Purpose**: To handle indexing, similarity search, and persistence operations for vector embeddings.
 
-**Option A**: Use a Vector Database (e.g., Chroma DB) for the Entire Process.
+3. **Embedding Service**
+    - **Role**: Converts text into vector embeddings.
+    - **Purpose**: To transform raw text or queries into vector space using pre-trained language models.
 
-**Option B**: Use Existing Modules for Chunking, Embedding + FAISS for Indexing/Search + SQLite for Retrieval.
+4. **Chunking Service**
+    - **Role**: Splits articles or texts into chunks.
+    - **Purpose**: To break down long texts into smaller chunks suitable for vector embedding and search.
 
-After evaluating the pros and cons of each option, we have decided to proceed with **Option B** for the following reasons:
+5. **SearchEngine (Abstract Base Class)**
+    - **Role**: Provides a higher-level interface for search functionalities.
+    - **Purpose**: To abstract the complexities of the underlying components and offer a unified search interface.
 
-- **Modularity**: Ensures easier updates, optimizations, or replacements of individual modules.
-- **Customization**: Allows for tailored optimizations or adjustments based on specific needs.
-- **Leveraging Existing Work**: Ensures that previous development efforts are not wasted and provides a foundation to build upon.
+6. **RetrievalService**
+    - **Role**: Processes search results and retrieves articles or chunks.
+    - **Purpose**: To handle the post-search operations, including fetching and presenting the results.
 
-### 3.4.3 Key Components
+### 3.4.3 Implementation Details
 
-#### Classes/Interfaces:
+#### FAISS Vector Store
 
-- **SearchEngine**:
-  - **Role**: Primary interface for executing vector-based search queries on stored articles.
-  - **Methods**:
-    - `similarity_search`: Conduct a basic similarity search on articles.
-    - `advanced_search`: Perform an enhanced search based on content and metadata.
+- **Methods**:
+    - **index_documents**:
+        - **Input**:
+            - `embeddings`: List[List[float]]
+            - `metadata_list`: List[dict]
+        - **Output**: None
+    - **similarity_search**:
+        - **Input**: `query_vector`: List[float]
+        - **Output**: List[Tuple[int, float]]
+    - **save_index** & **load_index**:
+        - **Input**: `file_path`: str
+        - **Output**: None
 
-- **ArticleRetrieval**:
-  - **Role**: Fetch various components of articles (full, chunks, summaries) based on search results.
-  - **Methods**:
-    - `retrieve_full_articles`: Fetch complete articles using given IDs.
-    - `retrieve_article_chunks`: Extract specific segments from articles.
-    - `retrieve_summaries`: Get pre-generated article summaries.
+#### Embedding Service
 
-### 3.4.4 Implementation Details
+- **Methods**:
+    - **embed_text**:
+        - **Input**: `text`: str
+        - **Output**: List[float]
+    - **embed_batch**:
+        - **Input**: `texts`: List[str]
+        - **Output**: List[List[float]]
 
-#### Classes/Interfaces:
+#### Chunking Service
 
-- **SearchEngine**:
-  - **Attributes**:
-    - **Technologies**: Leverage vector search engines (e.g., Faiss, Annoy) and pre-trained language models for embeddings.
-  - **Methods**:
-    - `similarity_search(query: str) -> List[Article]`: Convert query to vector embedding, search for nearest article embeddings.
-    - `advanced_search(query: str, metadata: dict) -> List[Article]`: Combine similarity search with metadata filters to narrow results.
+- **Methods**:
+    - **split_text**:
+        - **Input**: `text`: str
+        - **Output**: List[str]
 
-- **ArticleRetrieval**:
-  - **Attributes**:
-    - **Database Queries**: Efficiently fetch full articles or specific sections based on returned article IDs from the search engine.
-  - **Methods**:
-    - `retrieve_full_articles(article_ids: List[int]) -> List[Article]`: Fetch directly from the database using primary keys.
-    - `retrieve_article_chunks(article_ids: List[int]) -> List[str]`: Use text processing to extract required sections.
-    - `retrieve_summaries(article_ids: List[int]) -> List[str]`: Access pre-generated article summaries from the database.
+#### SearchEngine (Abstract Base Class)
 
-### 3.4.5 Rationale
+- **Methods**:
+    - **convert_query_to_vector**:
+        - **Input**: `query`: str
+        - **Output**: List[float]
+    - **execute_similarity_search**:
+        - **Input**: `query_vector`: List[float]
+        - **Output**: List[Tuple[int, float]]
+    - **execute_advanced_search**:
+        - **Input**:
+            - `query_vector`: List[float]
+            - `metadata`: dict
+        - **Output**: List[Tuple[int, float]]
+
+#### RetrievalService
+
+- **Methods**:
+    - **process_results**:
+        - **Input**: `raw_results`: List[Tuple[int, float]]
+        - **Output**: List[Article]
+    - **retrieve_full_articles**:
+        - **Input**: `article_ids`: List[int]
+        - **Output**: List[Article]
+    - **retrieve_article_chunks**:
+        - **Input**: `article_ids`: List[int]
+        - **Output**: List[str]
+
+### 3.4.4 Rationale
 
 - **Vector-based Search**: Vector search identifies similar articles even without exact keyword matches. It understands context and semantic similarities by translating queries and articles into shared vector spaces.
-
 - **Advanced Search Capabilities**: Alongside content similarity, users can filter results using metadata (e.g., date, author), enhancing the search experience.
-
 - **Multiple Retrieval Options**: Users might need complete articles, specific sections, or summaries. Providing these options ensures a comprehensive user experience.
-
+- **Evaluation of Options**:
+  - **Option A**: Use a Vector Database (e.g., Chroma DB) for the Entire Process.
+  - **Option B**: Use Existing Modules for Chunking, Embedding + FAISS for Indexing/Search + SQLite for Retrieval.
+  - After evaluating the pros and cons of each option, we have decided to proceed with **Option B** for the following reasons:
+    - **Modularity**: Ensures easier updates, optimizations, or replacements of individual modules.
+    - **Customization**: Allows for tailored optimizations or adjustments based on specific needs.
+    - **Leveraging Existing Work**: Ensures that previous development efforts are not wasted and provides a foundation to build upon.
 
 
 ## 3.5 Podcast Script Generation Module
