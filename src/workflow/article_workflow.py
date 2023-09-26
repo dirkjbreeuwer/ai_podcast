@@ -18,9 +18,10 @@ from src.search_and_retrieval.preprocessing_services.chunk_service import (
 )
 from src.search_and_retrieval.preprocessing_services.embedding_service import (
     HuggingFaceBGEEmbeddingService,
-    HuggingFaceToLangchainEmbeddingAdapter,
+    GenericEmbeddingAdapter,
 )
 from src.search_and_retrieval.faiss_vector_store import FAISSStore
+from src.utils.logging_config import get_logger
 
 
 class ArticleWorkflow:
@@ -46,10 +47,19 @@ class ArticleWorkflow:
         self.db_path = db_path
         self.crawler = ApifyArticleCrawler("ApifyArticleCrawler", {})
         self.db_manager = SQLiteManager(db_path=self.db_path)
-        self.chunk_service = LangChainChunkingService(chunk_size=300, chunk_overlap=20)
-        self.huggingface_service = HuggingFaceBGEEmbeddingService()
-        self.adapter = HuggingFaceToLangchainEmbeddingAdapter(self.huggingface_service)
+        self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
+        # pylint: disable=line-too-long
+        self.huggingface_service = HuggingFaceBGEEmbeddingService(
+            encode_kwargs={"normalize_embeddings": False}
+        )
+        self.adapter = GenericEmbeddingAdapter(self.huggingface_service)
         self.faiss_store = FAISSStore(self.adapter)
+        self.logger = get_logger(__name__)
+        self.logger.info(
+            "ArticleWorkflow initialized with dataset_id: %s and db_path: %s",
+            dataset_id,
+            db_path,
+        )
 
         # Initialize the database
         self.initialize_database()
@@ -59,6 +69,7 @@ class ArticleWorkflow:
         Initialize the SQLite database schema.
         Create necessary tables if they don't exist.
         """
+        self.logger.info("Initializing the SQLite database schema.")
         self.db_manager.initialize_schema()
 
     def crawl_and_store_articles(self, urls):
@@ -72,6 +83,9 @@ class ArticleWorkflow:
             int: The number of articles successfully crawled and stored.
         """
         # Step 1: Crawl articles using the ApifyArticleCrawler
+        self.logger.info(
+            "Starting the crawl_and_store_articles method with URLs: %s", urls
+        )
         crawled_data = self.crawler.batch_fetch(urls)
 
         # Step 2: Transform crawled data into standardized Article format
@@ -85,13 +99,23 @@ class ArticleWorkflow:
         for article in articles:
             self.db_manager.save(article)
 
+        self.logger.info(
+            "Number of articles successfully crawled and stored: %d", len(articles)
+        )
         return len(articles)
 
+    # pylint: disable=fixme
+    # TODO: Load existing index, and only process articles that have not been indexed
     def process_and_index_articles(self, max_articles: Optional[int] = None):
         """
         Load articles from the SQLite database, chunk their text, generate embeddings,
         and index the embeddings for efficient similarity search.
         """
+        # pylint: disable=line-too-long
+        self.logger.info(
+            "Starting the process_and_index_articles method with max_articles: %s",
+            max_articles,
+        )
         # Step 1: Load articles from the SQLite database
         articles = self.db_manager.find_all(
             limit=max_articles
@@ -100,10 +124,16 @@ class ArticleWorkflow:
         # Step 2: Chunk articles into smaller textual chunks
         all_chunks = []
         metadata_list = []  # List to store metadata for each chunk
+        total_word_count = 0  # Initialize total word count
+
         for article in articles:
             # Split each article into chunks
             chunks = self.chunk_service.split_into_chunks(article)
             all_chunks.extend(chunks)
+
+            # Calculate total word count for all chunks
+            for chunk in chunks:
+                total_word_count += len(chunk.split())
 
             # Generate metadata for each chunk
             for chunk in chunks:
@@ -114,6 +144,12 @@ class ArticleWorkflow:
                     "id": article.article_id,
                 }
                 metadata_list.append(metadata)
+
+        # Calculate average chunk length in words
+        average_chunk_length = total_word_count / len(all_chunks) if all_chunks else 0
+
+        # Print or return the debugging information
+        self.logger.info("Average chunk length: %.2f words", average_chunk_length)
 
         # Step 3: Generate embeddings for the chunks
         embeddings = [
@@ -133,3 +169,4 @@ class ArticleWorkflow:
         Returns:
             List[Article]: A list of relevant articles.
         """
+        self.logger.info("Starting the search_articles method with query: %s", query)
