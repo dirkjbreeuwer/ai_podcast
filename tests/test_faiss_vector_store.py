@@ -22,7 +22,8 @@ from src.search_and_retrieval.faiss_vector_store import FAISSStore
 
 from src.search_and_retrieval.preprocessing_services.embedding_service import (
     HuggingFaceBGEEmbeddingService,
-    HuggingFaceToLangchainEmbeddingAdapter,
+    GenericEmbeddingAdapter,
+    OpenAIEmbeddingService,
 )
 
 
@@ -42,11 +43,12 @@ class TestFAISSStore(unittest.TestCase):
         Initializes the HuggingFaceBGEEmbeddingService, the adapter, and the FAISSStore.
         """
         # Initialize the HuggingFaceBGEEmbeddingService
-        huggingface_service = HuggingFaceBGEEmbeddingService()
+        # huggingface_service = HuggingFaceBGEEmbeddingService()
+        openai_service = OpenAIEmbeddingService()
 
         # Use the adapter to adapt the HuggingFaceBGEEmbeddingService
         # to the expected Embeddings interface
-        adapter = HuggingFaceToLangchainEmbeddingAdapter(huggingface_service)
+        adapter = GenericEmbeddingAdapter(openai_service)
 
         # Initialize the FAISSStore with the adapter
         self.faiss_store = FAISSStore(adapter)
@@ -90,7 +92,6 @@ class TestFAISSStore(unittest.TestCase):
         self.faiss_store.index_documents(texts, embeddings, metadata_list)
         self.assertIsNotNone(self.faiss_store.index)
 
-    @pytest.mark.asyncio
     async def test_similarity_search(self):
         """Test the asynchronous similarity search functionality of the FAISSStore."""
         texts, embeddings = self.generate_sample_texts_and_embeddings()
@@ -99,6 +100,47 @@ class TestFAISSStore(unittest.TestCase):
         results = await self.faiss_store.similarity_search(embeddings[0], k=1)
         self.assertEqual(len(results), 1)
         self.assertIn("article_id", results[0][2])
+
+    def test_similarity_search_with_sample_data(self):
+        """Test the similarity search functionality with sample data."""
+        # Sample data
+        query = "I like to eat apples"
+        texts = [
+            "I like to eat oranges",
+            "I like to eat burgers",
+            "I like to shower",
+            "My car broke down",
+            "France is a country in Europe",
+        ]
+
+        # Generate embeddings for the texts
+        embeddings = [self.faiss_store.embeddings.embed_query(text) for text in texts]
+
+        # Metadata for the texts
+        metadata_list = [{"id": i, "title": f"Document {i}"} for i in range(len(texts))]
+
+        # Index the documents
+        self.faiss_store.index_documents(texts, embeddings, metadata_list)
+
+        # Perform similarity search
+        results = self.faiss_store.similarity_search(query, k=6)
+
+        # Print the results
+        print("Query:", query)
+        print("Results (in order of similarity):")
+        for idx, (doc_id, score, metadata, chunk_text) in enumerate(results):
+            print(
+                f"{idx + 1}. {doc_id} {metadata['title']} (Score: {score}): {chunk_text}"
+            )
+
+        # Check the results
+        self.assertEqual(len(results), 5)
+        for result in results:
+            self.assertIn(result[2]["title"], [f"Document {i}" for i in range(5)])
+
+        # Check if "France is a country in Europe" is ranked the lowest
+        france_doc_rank = [result[2]["title"] for result in results].index("Document 4")
+        self.assertEqual(france_doc_rank, len(results) - 1)
 
     @pytest.mark.asyncio
     async def test_save_and_load_index(self):
@@ -110,7 +152,7 @@ class TestFAISSStore(unittest.TestCase):
 
         # Create a new adapter and FAISSStore instance
         huggingface_service = HuggingFaceBGEEmbeddingService()
-        adapter = HuggingFaceToLangchainEmbeddingAdapter(huggingface_service)
+        adapter = GenericEmbeddingAdapter(huggingface_service)
         new_store = FAISSStore(adapter)
 
         new_store.load_index("temp_index")
