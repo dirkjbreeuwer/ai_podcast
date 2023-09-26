@@ -15,14 +15,19 @@ Note:
     Relies on the `vector_store.py` for the VectorStore abstract base class.
 """
 
-import asyncio
 from typing import List, Tuple, Dict, Optional
+
+# pylint: disable=import-error
+import nest_asyncio
 
 # pylint: disable=import-error
 from langchain.vectorstores.faiss import FAISS
 from langchain.schema.embeddings import Embeddings
 from .vector_store import VectorStore
 from .search_engine import SearchEngine
+
+# Allow nested asyncio calls (useful for running in Jupyter notebooks)
+nest_asyncio.apply()
 
 
 class FAISSStore(VectorStore, SearchEngine):
@@ -39,30 +44,36 @@ class FAISSStore(VectorStore, SearchEngine):
         metadata_list: List[Dict[str, str]],
     ) -> None:
         text_embeddings = list(zip(texts, embeddings))
+
+        # Add the chunk_text to the metadata for each document
+        for i, chunk in enumerate(texts):
+            metadata_list[i]["chunk_text"] = chunk
+
         self.index = FAISS.from_embeddings(
             text_embeddings, self.embeddings, metadatas=metadata_list
         )
 
     def similarity_search(
         self, query_vector: List[float], k: Optional[int] = 10
-    ) -> List[Tuple[int, float, Dict[str, str]]]:
+    ) -> List[Tuple[int, float, Dict[str, str], str]]:
         # Perform similarity search using the query vector
         # The method returns both the document IDs and their similarity scores
         # Run the coroutine synchronously
 
         # Using the updated method to get both doc_ids and scores
         # pylint: disable=line-too-long
-        results_with_scores = asyncio.run(
-            self.index.asimilarity_search_with_relevance_scores(query_vector, k)
-        )
+        results_with_scores = self.index.similarity_search_with_score(query_vector, k)
 
-        # Extract doc_ids, scores, and metadata directly from results_with_scores
+        # Extract doc_ids, scores, metadata, and chunk_text directly from results_with_scores
         doc_ids = [doc.metadata["id"] for doc, _ in results_with_scores]
         scores = [score[1] for score in results_with_scores]
         metadata_list = [doc.metadata for doc, _ in results_with_scores]
+        chunk_texts = [
+            doc.metadata["chunk_text"] for doc, _ in results_with_scores
+        ]  # Extracting the chunk_text
 
-        # Combine doc_ids, scores, and metadata into a single list of results
-        results = list(zip(doc_ids, scores, metadata_list))
+        # Combine doc_ids, scores, metadata, and chunk_text into a single list of results
+        results = list(zip(doc_ids, scores, metadata_list, chunk_texts))
 
         return results
 
