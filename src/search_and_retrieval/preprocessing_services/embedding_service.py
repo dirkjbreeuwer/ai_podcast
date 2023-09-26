@@ -94,17 +94,18 @@ class HuggingFaceBGEEmbeddingService(EmbeddingService):
         return self.embeddings.embed_query(text_chunk)
 
 
-class HuggingFaceToLangchainEmbeddingAdapter(Embeddings):
+class GenericEmbeddingAdapter(Embeddings):
     """
-    Adapter to make HuggingFaceBGEEmbeddingService compatible with LangChain's Embeddings interface.
+    Adapter to make any EmbeddingService compatible with LangChain's Embeddings interface.
 
     Attributes:
-        huggingface_service (HuggingFaceBGEEmbeddingService): The HuggingFace embedding service.
+        embedding_service (EmbeddingService): The embedding service
+        (can be OpenAI, HuggingFace, etc.).
     """
 
-    def __init__(self, huggingface_service: HuggingFaceBGEEmbeddingService):
-        """Initialize the adapter with a HuggingFace embedding service."""
-        self.huggingface_service = huggingface_service
+    def __init__(self, embedding_service: EmbeddingService):
+        """Initialize the adapter with an embedding service."""
+        self.embedding_service = embedding_service
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
@@ -116,7 +117,7 @@ class HuggingFaceToLangchainEmbeddingAdapter(Embeddings):
         Returns:
             List[List[float]]: List of embeddings for each document.
         """
-        return [self.huggingface_service.generate_embedding(text) for text in texts]
+        return [self.embedding_service.generate_embedding(text) for text in texts]
 
     def embed_query(self, text: str) -> List[float]:
         """
@@ -128,4 +129,4 @@ class HuggingFaceToLangchainEmbeddingAdapter(Embeddings):
         Returns:
             List[float]: Embedding of the query.
         """
-        return self.huggingface_service.generate_embedding(text)
+        return self.embedding_service.generate_embedding(text)
