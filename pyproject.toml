@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "ai_podcast"
+version = "0.1.0"
+description = "An end to end workflow to create an AI powered podcast"
+authors = ["Dirk Breeuwer"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "scripts" }]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+chromadb = "^0.4.13"
+requests = "^2.31.0"
+python-dotenv = "^1.0.0"
+pysqlite3-binary = "^0.5.2"
+langchain = "^0.0.304"
+pytest = "^7.4.2"
+openai = "^0.28.1"
+python-decouple = "^3.8"
+sentence-transformers = "^2.2.2"
+torch = "^2.0.1"
+transformers = { version = "^4.0", extras = ["torch"] }
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+postinstall = "scripts.post_install:main"
