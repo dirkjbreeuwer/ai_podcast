@@ -35,14 +35,29 @@ class ApifyArticleCrawler(Crawler):
     """
 
     def __init__(
-        self, name: str, crawler_config: Dict[str, Union[str, int, bool]]
+        self,
+        name: str,
+        crawler_config: Dict[str, Union[str, int, bool]],
+        api_key: str = None,  # Optional API key parameter
     ) -> None:
         super().__init__(name, crawler_config)
-        self.api_key = self._load_api_key()
+        if api_key:
+            self.api_key = api_key
+        else:
+            self.api_key = self._load_api_key()
 
     def _load_api_key(self) -> str:
         # Load the API key using decouple's config function
-        return config("APIFY_API_KEY", default="")
+        api_key = config("APIFY_API_KEY", default="")
+
+        # Check if the API key is empty or None
+        if not api_key:
+            # pylint: disable=line-too-long
+            raise ValueError(
+                "No API key loaded from environment or provided. Please ensure you have the APIFY_API_KEY set in your environment or configuration."
+            )
+        print(api_key)
+        return api_key
 
     def set_options(self, options: Dict) -> None:
         """
@@ -67,6 +82,7 @@ class ApifyArticleCrawler(Crawler):
         # pylint: disable=C0301
         endpoint = f"https://api.apify.com/v2/acts/lukaskrivka~article-extractor-smart/run-sync-get-dataset-items?token={self.api_key}"
         payload = {"startUrls": [{"url": url}]}
+        print(endpoint)
         timeout_seconds = 60 * 4  # 4 minutes
 
         response = requests.post(endpoint, json=payload, timeout=timeout_seconds)
