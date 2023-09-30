@@ -41,7 +41,7 @@ class TestPromptBuilder(unittest.TestCase):
         """
         content = "This is a sample article about AI."
         # pylint: disable=line-too-long
-        expected_prompt = "Generate a script based on the following article: This is a sample article about AI."
+        expected_prompt = "Convert the following article into a script: This is a sample article about AI."
         result = PromptBuilder.build_script_prompt(content)
         self.assertEqual(result, expected_prompt)
 
