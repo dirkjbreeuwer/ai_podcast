@@ -1,0 +1,242 @@
+"""
+TODO: Add docstring.
+
+requires:
+pip install chromadb
+pip install chromadb-client
+""
+
+"""
+from typing import Dict, Optional, List, Union
+import uuid
+
+
+# pylint: disable=import-error
+import chromadb as chroma
+from chromadb.types import Collection
+
+from .vector_store import VectorStore, QueryResult
+
+
+class ChromaVectorStore(VectorStore):
+    """
+    Implementation of the VectorStore for the Chroma vector database.
+
+    Provides methods to interact with Chroma, including creating, querying,
+    and managing collections. Supports ephemeral, persistent, and HTTP Chroma clients.
+
+    Ensure `chromadb` and `chromadb-client` packages are installed.
+
+    Attributes:
+        client: Chroma client instance.
+        current_collection: Current active collection in Chroma.
+
+    Args:
+        api_key (Optional[str]): API key or token.
+        client_type (str): Chroma client type ("ephemeral", "persistent", or "http").
+        path (Optional[str]): Path for persistent storage.
+        host (Optional[str]): Host for HTTP client.
+        port (Optional[int]): Port for HTTP client.
+        config (Optional[Dict[str, str]]): Additional configurations.
+    """
+
+    # pylint: disable=R0913
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        client_type: str = "ephemeral",
+        path: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        config: Optional[Dict[str, str]] = None,
+    ):
+        """
+        Initializes the ChromaVectorStore with optional parameters.
+
+        Args:
+            api_key (str, optional): API key or authentication token.
+            client_type (str): Type of Chroma client ("ephemeral", "persistent", or "http").
+            path (str, optional): Path for persistent client storage.
+            host (str, optional): Host for HTTP client.
+            port (int, optional): Port for HTTP client.
+            config (Dict[str, str], optional): Additional configuration settings.
+        """
+        super().__init__(api_key, None, config)
+
+        if client_type == "ephemeral":
+            self.client = chroma.Client()
+        elif client_type == "persistent":
+            if not path:
+                raise ValueError("Path is required for persistent client.")
+            # pylint: disable=no-member
+            self.client = chroma.PersistentClient(path=path)
+        elif client_type == "http":
+            if not host or not port:
+                raise ValueError("Host and port are required for HTTP client.")
+            # pylint: disable=no-member
+            self.client = chroma.HttpClient(host=host, port=port)
+        else:
+            raise ValueError(f"Invalid client type: {client_type}")
+
+        self.current_collection = None
+
+    def create_collection(
+        self, name: str, metadata: Optional[Dict[str, str]] = None
+    ) -> Collection:
+        """
+        Creates a new collection with the given name and metadata in Chroma.
+
+        Args:
+            name (str): The name of the collection to create.
+            metadata (Optional[Dict[str, str]]): Optional metadata to associate with the collection.
+
+        Returns:
+            Collection: The newly created collection.
+
+        Raises:
+            ValueError: If the collection already exists.
+            ValueError: If the collection name is invalid.
+        """
+        # Using the Chroma client to create a collection
+        self.current_collection = self.client.create_collection(
+            name=name, metadata=metadata
+        )
+
+    def use_collection(self, name):
+        """
+        Sets the current collection to an existing one or creates it if it doesn't exist.
+
+        Args:
+            name (str): Name of the collection to use or create.
+        """
+        # Set the current collection to an existing one
+        self.current_collection = self.client.get_or_create_collection(name)
+
+    def delete_collection(self, name: str) -> None:
+        """
+        Deletes a collection with the given name from Chroma.
+
+        Args:
+            name (str): The name of the collection to delete.
+
+        Raises:
+            ValueError: If the collection does not exist.
+        """
+        # Using the Chroma client to delete a collection
+        self.client.delete_collection(name=name)
+
+    def add_documents(
+        self,
+        texts: List[str],
+        embeddings: Optional[List[List[float]]] = None,
+        metadata_list: Optional[List[Dict[str, str]]] = None,
+        ids: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Adds documents and their associated embeddings and metadata
+        to the current collection in Chroma.
+
+        Args:
+            texts (List[str]): List of documents to be added.
+            embeddings (Optional[List[List[float]]]): List of embeddings.
+            If not provided, embeddings will be generated by Chroma.
+            metadata_list (Optional[List[Dict[str, str]]]): Metadata associated with each document.
+            ids (Optional[List[str]]): IDs for each document.
+            If not provided, unique IDs will be auto-generated.
+
+        Raises:
+            ValueError: If no collection is set.
+            ValueError: Handled by the underlying Chroma library for various conditions.
+        """
+        # Ensure a collection is set
+        if not self.current_collection:
+            # pylint: disable=line-too-long
+            raise ValueError(
+                "No collection is set. Use 'create_collection' or 'use_collection' first."
+            )
+
+        # If ids are not provided, auto-generate unique IDs for each document
+        if not ids:
+            ids = [str(uuid.uuid4()) for _ in texts]
+
+        # Add documents to the current collection
+        self.current_collection.add(
+            ids=ids, embeddings=embeddings, metadatas=metadata_list, documents=texts
+        )
+
+    def remove_documents(self, ids: List[str]) -> None:
+        """
+        Removes documents with the specified IDs from the current collection in Chroma.
+
+        Args:
+            ids (List[str]): List of document IDs to be removed.
+
+        Raises:
+            ValueError: If no collection is set.
+        """
+        # Ensure a collection is set
+        if not self.current_collection:
+            # pylint: disable=line-too-long
+            raise ValueError(
+                "No collection is set. Use 'create_collection' or 'use_collection' first."
+            )
+
+        # Remove documents from the current collection
+        self.current_collection.delete(ids=ids)
+
+    def save_index(self, file_path: str) -> None:
+        raise NotImplementedError("This method has not been implemented yet.")
+
+    def load_index(self, file_path: str) -> None:
+        raise NotImplementedError("This method has not been implemented yet.")
+
+    def query_collection(
+        self,
+        query_texts: Optional[List[str]] = None,
+        n_results: int = 10,
+        query_embeddings: Optional[List[List[float]]] = None,
+        where: Optional[Dict[str, Union[str, float]]] = None,
+        where_document: Optional[Dict[str, Dict[str, str]]] = None,
+        include: Optional[List[str]] = None,
+    ) -> QueryResult:
+        """
+        Queries the current collection in Chroma and returns the nearest neighbors.
+
+        Args:
+            # pylint: disable=line-too-long
+            query_texts (Optional[List[str]]): Document texts for querying.
+            n_results (int): Number of nearest neighbors to return.
+            query_embeddings (Optional[List[List[float]]]): Embeddings for querying.
+            where (Optional[Dict[str, Union[str, float]]]): A filter to narrow down results based on metadata criteria. For example, {"color": "red", "price": 4.20} would return vectors with metadata matching these criteria.
+            where_document (Optional[Dict[str, Dict[str, str]]]): A filter to narrow down results based on document content. For instance, {$contains: {"text": "hello"}} would return vectors whose documents contain the word "hello".
+            include (Optional[List[str]]): Data to include in the results. Defaults to ["metadatas", "documents", "distances"].
+
+
+        Returns:
+            QueryResult: Contains the results.
+
+        Raises:
+            ValueError: If no collection is set or incorrect query parameters are provided.
+        """
+        if include is None:
+            include = ["metadatas", "documents", "distances"]
+
+        if not self.current_collection:
+            # pylint: disable=line-too-long
+            raise ValueError(
+                "No collection set. Use 'create_collection' or 'use_collection' first."
+            )
+
+        if not query_embeddings and not query_texts:
+            raise ValueError("Provide either 'query_embeddings' or 'query_texts'.")
+        if query_embeddings and query_texts:
+            raise ValueError("Provide only one of 'query_embeddings' or 'query_texts'.")
+
+        return self.current_collection.query(
+            query_embeddings=query_embeddings,
+            query_texts=query_texts,
+            n_results=n_results,
+            where=where,
+            where_document=where_document,
+            include=include,
+        )

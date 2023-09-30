@@ -1,22 +1,41 @@
 """
 Vector Store Module
 
-This module provides an abstract base class for vector store operations,
-ensuring a consistent interface for indexing, searching, saving, and loading
-vector embeddings regardless of the underlying technology.
+Defines the `VectorStore` abstract base class for consistent vector operations.
+Designed for extensibility with various vector storage technologies.
 
-The primary purpose of this module is to empower users to efficiently and
-comprehensively query and fetch articles based on a query, delivering relevant
-search results using vector embeddings.
+Key Features:
+    - Core vector operations as abstract methods.
+    - Initialization with API key, environment, and config.
 
 Classes:
-    - VectorStore: Abstract base class for vector store operations.
+    - VectorStore: Base class for vector operations.
 
-Future implementations can derive from the VectorStore class to provide
-specific implementations using technologies like FAISS, Annoy, etc.
+Note:
+    Abstract base class; requires subclassing and method implementations.
 """
+
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
+from typing import List, Dict, Optional, TypedDict
+
+
+class QueryResult(TypedDict):
+    """
+    Represents the result of a query in the vector store.
+
+    Attributes:
+        ids (List[str]): List of document IDs.
+        embeddings (Optional[List[List[float]]]): List of embeddings for the documents.
+        documents (Optional[List[str]]): List of document texts.
+        metadatas (Optional[List[Dict[str, str]]]): List of metadata associated with the documents.
+        distances (Optional[List[float]]): List of distances or similarity scores for the documents.
+    """
+
+    ids: List[str]
+    embeddings: Optional[List[List[float]]]
+    documents: Optional[List[str]]
+    metadatas: Optional[List[Dict[str, str]]]
+    distances: Optional[List[float]]
 
 
 class VectorStore(ABC):
@@ -27,34 +46,81 @@ class VectorStore(ABC):
     regardless of the underlying technology.
     """
 
-    @abstractmethod
-    def index_documents(
+    def __init__(
         self,
-        texts: List[str],
-        embeddings: List[List[float]],
-        metadata_list: List[Dict[str, str]],
-    ) -> None:
+        api_key: Optional[str] = None,
+        environment: Optional[str] = None,
+        config: Optional[Dict[str, str]] = None,
+    ):
         """
-        Indexes the provided embeddings along with their associated metadata.
+        Initializes the VectorStore with optional parameters.
 
         Args:
-            embeddings (List[List[float]]): List of embeddings to be indexed.
-            metadata_list (List[Dict]): List of metadata associated with each embedding.
+            api_key (str, optional): API key or authentication token.
+            environment (str, optional): Environment or endpoint URL.
+            config (Dict[str, str], optional): Additional configuration settings.
+        """
+        self.api_key = api_key
+        self.environment = environment
+        self.config = config if config else {}
+
+    @abstractmethod
+    def create_collection(self, name: str) -> None:
+        """
+        Creates a new collection to store embeddings and associated metadata.
+
+        Args:
+            name (str): Name of the collection.
 
         Returns:
             None
         """
 
     @abstractmethod
-    def similarity_search(self, query_vector: List[float]) -> List[Tuple[int, float]]:
+    def query_collection(self, query_texts: List[str], n_results: int) -> QueryResult:
         """
-        Performs a similarity search using the provided query vector.
+        Queries the collection and returns the most similar documents.
 
         Args:
-            query_vector (List[float]): Query vector for similarity search.
+            query_texts (List[str]): List of query texts.
+            n_results (int): Number of results to return.
 
         Returns:
             List[Tuple[int, float]]: List of (index, similarity_score) tuples.
+        """
+
+    @abstractmethod
+    def add_documents(
+        self,
+        texts: List[str],
+        embeddings: Optional[List[List[float]]] = None,
+        metadata_list: Optional[List[Dict[str, str]]] = None,
+        ids: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Adds documents and their associated embeddings and metadata to the collection.
+
+        Args:
+            texts (List[str]): List of documents to be added.
+            embeddings (List[List[float]], optional): List of embeddings.
+            If not provided, embeddings will be generated.
+            metadata_list (List[Dict], optional): Metadata associated with each document.
+            ids (List[str], optional): IDs for each document.
+
+        Returns:
+            None
+        """
+
+    @abstractmethod
+    def remove_documents(self, ids: List[str]) -> None:
+        """
+        Removes documents from the collection based on their IDs.
+
+        Args:
+            ids (List[str]): IDs of the documents to be removed.
+
+        Returns:
+            None
         """
 
     @abstractmethod
