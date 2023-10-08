@@ -56,7 +56,6 @@ class ApifyArticleCrawler(Crawler):
             raise ValueError(
                 "No API key loaded from environment or provided. Please ensure you have the APIFY_API_KEY set in your environment or configuration."
             )
-        print(api_key)
         return api_key
 
     def set_options(self, options: Dict) -> None:
