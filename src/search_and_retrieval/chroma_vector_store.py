@@ -15,6 +15,9 @@ import uuid
 import chromadb as chroma
 from chromadb.types import Collection
 
+# pylint: disable=no-name-in-module
+from chromadb import PersistentClient
+
 from .vector_store import VectorStore, QueryResult
 
 
@@ -185,10 +188,26 @@ class ChromaVectorStore(VectorStore):
         self.current_collection.delete(ids=ids)
 
     def save_index(self, file_path: str) -> None:
-        raise NotImplementedError("This method has not been implemented yet.")
+        """
+        Saves the current Chroma index to the specified file path.
+
+        Args:
+            file_path (str): The path where the Chroma index will be saved.
+        """
+        self.client = PersistentClient(path=file_path)
+        # pylint: disable=line-too-long
+        # Since Chroma automatically persists data with PersistentClient, no further action is needed.
 
     def load_index(self, file_path: str) -> None:
-        raise NotImplementedError("This method has not been implemented yet.")
+        """
+        Loads the Chroma index from the specified file path.
+
+        Args:
+            file_path (str): The path from where the Chroma index will be loaded.
+        """
+        # pylint: disable=no-member
+        self.client = PersistentClient(path=file_path)
+        # Chroma will automatically load the data from the provided path.
 
     def query_collection(
         self,

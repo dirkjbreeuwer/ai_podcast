@@ -5,6 +5,7 @@ Unit tests for the ChromaVectorStore class.
 import unittest
 import tempfile
 import os
+import shutil
 
 from src.search_and_retrieval.chroma_vector_store import ChromaVectorStore
 
@@ -131,6 +132,51 @@ class TestChromaVectorStore(unittest.TestCase):
             "Query with complex where clause did not return any results.",
         )
         store.delete_collection(name=collection_name)
+
+    def test_save_index(self):
+        """Test saving the Chroma index to a file."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            store = ChromaVectorStore(client_type="persistent", path=temp_dir)
+            collection_name = "save_index_test"
+            store.create_collection(name=collection_name)
+            store.use_collection(name=collection_name)
+            texts = ["doc1", "doc2"]
+            store.add_documents(texts=texts)
+
+            # Save the index
+            store.save_index(file_path=temp_dir)
+
+            # Check if the directory is not empty (indicating the index was saved)
+            self.assertTrue(os.listdir(temp_dir), "Index was not saved correctly.")
+
+            # Delete the index files from the disk after testing
+            shutil.rmtree(temp_dir)
+
+    def test_load_index(self):
+        """Test loading the Chroma index from a file."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # First, create and save an index
+            store = ChromaVectorStore(client_type="persistent", path=temp_dir)
+            collection_name = "load_index_test"
+            store.create_collection(name=collection_name)
+            store.use_collection(name=collection_name)
+            texts = ["doc1", "doc2"]
+            store.add_documents(texts=texts)
+            store.save_index(file_path=temp_dir)
+
+            # Now, create a new store and load the index
+            new_store = ChromaVectorStore(client_type="persistent", path=temp_dir)
+            new_store.load_index(file_path=temp_dir)
+
+            # Set the current collection to the one you're working with
+            new_store.use_collection(name=collection_name)
+
+            # Query the loaded index to check if it was loaded correctly
+            results = new_store.query_collection(query_texts=["doc1"], n_results=1)
+            self.assertTrue(results["ids"], "Index was not loaded correctly.")
+
+            # Delete the index files from the disk after testing
+            shutil.rmtree(temp_dir)
 
 
 if __name__ == "__main__":
