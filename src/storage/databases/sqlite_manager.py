@@ -10,7 +10,7 @@ Classes:
 
 from typing import Optional
 import sqlite3
-from src.crawlers.data_structures.article import Article
+from src.crawlers.data_structures.article import Article, ArticleType
 from .database_manager import DatabaseManager
 
 
@@ -28,7 +28,7 @@ class SQLiteManager(DatabaseManager):
 
     def save(self, article: Article) -> None:
         # pylint: disable=line-too-long
-        query = "INSERT INTO articles (url, title, text, date, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        query = "INSERT INTO articles (url, title, text, date, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         self.cursor.execute(
             query,
             (
@@ -44,13 +44,14 @@ class SQLiteManager(DatabaseManager):
                 ",".join(article.tags) if article.tags else None,
                 article.image,
                 article.is_vectorized,
+                article.article_type.value,
             ),
         )
         self.conn.commit()
 
     def update(self, article: Article) -> None:
         # pylint: disable=line-too-long
-        query = "UPDATE articles SET url=?, title=?, text=?, date=?, loaded_domain=?, author=?, description=?, keywords=?, lang=?, tags=?, image=?, is_vectorized=? WHERE id=?"
+        query = "UPDATE articles SET url=?, title=?, text=?, date=?, loaded_domain=?, author=?, description=?, keywords=?, lang=?, tags=?, image=?, is_vectorized=? , article_type=? WHERE id=?"
         self.cursor.execute(
             query,
             (
@@ -66,6 +67,7 @@ class SQLiteManager(DatabaseManager):
                 ",".join(article.tags) if article.tags else None,
                 article.image,
                 article.is_vectorized,
+                article.article_type.value,
                 article.article_id,
             ),
         )
@@ -78,7 +80,7 @@ class SQLiteManager(DatabaseManager):
 
     def find_by_id(self, article_id: int) -> Article:
         # pylint: disable=line-too-long
-        query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized FROM articles WHERE id=?"
+        query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type FROM articles WHERE id=?"
         self.cursor.execute(query, (article_id,))
         result = self.cursor.fetchone()
         if result:
@@ -96,13 +98,14 @@ class SQLiteManager(DatabaseManager):
                 tags=result[10].split(",") if result[10] else None,
                 image=result[11] if result[11] else None,
                 is_vectorized=result[12],
+                article_type=ArticleType(result[13]),
             )
         return None
 
     def find_all(self, limit: Optional[int] = None) -> list[Article]:
         # pylint: disable=line-too-long
         # Base query
-        query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized FROM articles"
+        query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type FROM articles"
 
         # If a limit is provided, append the LIMIT clause to the query
         if limit is not None:
@@ -125,6 +128,7 @@ class SQLiteManager(DatabaseManager):
                 tags=row[10].split(",") if row[10] else None,
                 image=row[11] if row[11] else None,
                 is_vectorized=row[12],
+                article_type=ArticleType(row[13]),
             )
             for row in results
         ]
@@ -165,7 +169,7 @@ class SQLiteManager(DatabaseManager):
 
     def batch_save(self, articles: list[Article]) -> None:
         # pylint: disable=line-too-long
-        query = "INSERT INTO articles (url, title, text, date, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        query = "INSERT INTO articles (url, title, text, date, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         values = [
             (
                 article.url,
@@ -180,6 +184,7 @@ class SQLiteManager(DatabaseManager):
                 ",".join(article.tags) if article.tags else None,
                 article.image,
                 article.is_vectorized,
+                article.article_type.value,
             )
             for article in articles
         ]
@@ -212,7 +217,8 @@ class SQLiteManager(DatabaseManager):
                     lang TEXT,
                     tags TEXT,
                     image TEXT,
-                    is_vectorized INTEGER DEFAULT 0
+                    is_vectorized INTEGER DEFAULT 0,
+                    article_type INTEGER
                 )
                 """
             )
