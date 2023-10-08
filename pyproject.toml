@@ -21,7 +21,11 @@ python-decouple = "^3.8"
 sentence-transformers = "^2.2.2"
 torch = "^2.0.1"
 transformers = { version = "^4.0", extras = ["torch"] }
+magentic = "^0.7.0"
 
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.25.2"
 
 [build-system]
 requires = ["poetry-core"]
