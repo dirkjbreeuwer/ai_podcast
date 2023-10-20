@@ -168,6 +168,8 @@ configs/*.yaml
 
 # Data files
 data/*
+!data/__init__.py
+
 
 
 
