@@ -16,7 +16,7 @@ from magentic import prompt
 load_dotenv()
 
 # Set the environment variable
-os.environ["MAGENTIC_OPENAI_MODEL"] = "gpt-4"
+os.environ["MAGENTIC_OPENAI_MODEL"] = "gpt-3.5-turbo"
 
 
 class ArticleType(IntEnum):
@@ -45,7 +45,12 @@ def add_article_type(title: str) -> ArticleType:
     pass  # No function body as this is never executed
 
 
-@prompt("""Summarize the article into 5 short bullet points: {article_text}""")
+@prompt(
+    """Summarize the following article into 5 short bullet points: {article_text}
+        ---
+        Remember to keep one short bullet point per line and start your bullet points with -
+        """
+)
 # pylint: disable=unused-argument
 def summarize_article(article_text: str) -> str:
     """
@@ -56,6 +61,30 @@ def summarize_article(article_text: str) -> str:
 
     Returns:
         str: The summary of the Article
+    """
+
+
+@prompt(
+    """Predict the relevance of the following article: {article_title}
+        ---
+        Relevance is a scaled number between 0 and 100, where 0 marginally relevant and 100 is extremely relevant.
+        Our audience is entrepreneurs and investors in the AI space
+        They care about important companies like Google, Facebook, and OpenAI
+        They care about important people like Elon Musk, Sam Altman, and Andrew Ng
+        They care about large funding rounds and acquisitions (>$100M) more than small funding rounds and acquisitions (<$100M)
+        They care about strategy more than policy (including things like privacy, ethics, and regulation)
+        """
+)
+# pylint: disable=unused-argument
+def predict_article_relevance(article_title: str) -> int:
+    """
+    Predicts the quality of an article
+
+    Args:
+        article_title (Article.tile): The title of the Article
+
+    Returns:
+        str: The relevance of the Article ranging from 0 to 100
     """
 
 
@@ -78,6 +107,7 @@ class Article:
         text (str): The main text content of the article.
         id (str): A unique identifier for the article.
         is_vectorized (bool): Indicates if the article has been vectorized.
+        article_type (ArticleType): The type of the article.
     """
 
     # Disabling the too many arguments warning because we want Article
@@ -124,9 +154,12 @@ class Article:
         return f"<Article(title={self.title}, url={self.url}, date={self.date})>"
 
     def get_summary(self) -> str:
-        """Returns a summary of the article (this is just a placeholder
-        and should be implemented properly)"""
+        """Returns a summary of the article"""
         return summarize_article(self.text)
+
+    def get_relevance(self) -> int:
+        """Returns the relevance of the article"""
+        return predict_article_relevance(self.title)
 
     @property
     def article_id(self):
