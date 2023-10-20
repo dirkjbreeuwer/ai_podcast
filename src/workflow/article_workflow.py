@@ -10,17 +10,15 @@ Available methods:
 """
 from typing import Optional
 
+from src.crawlers.data_structures.article import ArticleType
 from src.crawlers.apify_crawler import ApifyArticleCrawler
 from src.crawlers.transformers.apify_transformer import ApifyCrawlerOutputTransformer
 from src.storage.databases.sqlite_manager import SQLiteManager
+from src.search_and_retrieval.chroma_vector_store import ChromaVectorStore
 from src.search_and_retrieval.preprocessing_services.chunk_service import (
     LangChainChunkingService,
 )
-from src.search_and_retrieval.preprocessing_services.embedding_service import (
-    HuggingFaceBGEEmbeddingService,
-    GenericEmbeddingAdapter,
-)
-from src.search_and_retrieval.faiss_vector_store import FAISSStore
+from src.script_generation.script_generator import generate_script
 from src.utils.logging_config import get_logger
 
 
@@ -35,32 +33,30 @@ class ArticleWorkflow:
     """
 
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, dataset_id, db_path):
+    def __init__(self, relational_db_path):
         """
         Initialize the workflow with necessary configurations.
 
         Args:
-            dataset_id (str): The dataset ID for the ApifyCrawler.
             db_path (str): Path to the SQLite database.
         """
-        self.dataset_id = dataset_id
-        self.db_path = db_path
-        self.crawler = ApifyArticleCrawler("ApifyArticleCrawler", {})
-        self.db_manager = SQLiteManager(db_path=self.db_path)
-        self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
-        # pylint: disable=line-too-long
-        self.huggingface_service = HuggingFaceBGEEmbeddingService(
-            encode_kwargs={"normalize_embeddings": False}
-        )
-        self.adapter = GenericEmbeddingAdapter(self.huggingface_service)
-        self.faiss_store = FAISSStore(self.adapter)
         self.logger = get_logger(__name__)
-        self.logger.info(
-            "ArticleWorkflow initialized with dataset_id: %s and db_path: %s",
-            dataset_id,
-            db_path,
+        self.db_manager = SQLiteManager(db_path=relational_db_path)
+        self.crawler = ApifyArticleCrawler("ApifyArticleCrawler", {})
+        self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
+        # Initialize the Chroma store with ephemeral storage
+        self.vector_store = ChromaVectorStore(client_type="ephemeral")
+        # Create and use a collection in Chroma
+        # pylint: disable=line-too-long
+        self.vector_store.create_collection(
+            name="article_collection", metadata={"hnsw:space": "cosine"}
         )
-
+        self.vector_store.use_collection(name="article_collection")
+        # Create and use a collection in Chroma for article titles
+        self.vector_store.create_collection(
+            name="title_collection", metadata={"hnsw:space": "cosine"}
+        )
+        self.vector_store.use_collection(name="title_collection")
         # Initialize the database
         self.initialize_database()
 
@@ -108,10 +104,9 @@ class ArticleWorkflow:
     # TODO: Load existing index, and only process articles that have not been indexed
     def process_and_index_articles(self, max_articles: Optional[int] = None):
         """
-        Load articles from the SQLite database, chunk their text, generate embeddings,
-        and index the embeddings for efficient similarity search.
+        Load articles from the SQLite database, chunk their text
+        and index the chunks for efficient similarity search.
         """
-        # pylint: disable=line-too-long
         self.logger.info(
             "Starting the process_and_index_articles method with max_articles: %s",
             max_articles,
@@ -151,13 +146,25 @@ class ArticleWorkflow:
         # Print or return the debugging information
         self.logger.info("Average chunk length: %.2f words", average_chunk_length)
 
-        # Step 3: Generate embeddings for the chunks
-        embeddings = [
-            self.faiss_store.embeddings.embed_query(chunk) for chunk in all_chunks
+        # Step 3: Add chunks to the Chroma store
+        self.vector_store.use_collection(name="article_collection")
+        self.vector_store.add_documents(texts=all_chunks, metadata_list=metadata_list)
+
+        # Add titles to the Chroma store
+        titles = [article.title for article in articles]
+        title_metadata_list = [
+            {
+                "title": article.title,
+                "url": article.url,
+                "date": article.date,
+                "id": article.article_id,
+                "text": article.text,
+            }
+            for article in articles
         ]
 
-        # Step 4: Index the embeddings into the FAISSStore
-        self.faiss_store.index_documents(all_chunks, embeddings, metadata_list)
+        self.vector_store.use_collection(name="title_collection")
+        self.vector_store.add_documents(texts=titles, metadata_list=title_metadata_list)
 
     def search_articles(self, query):
         """
@@ -170,3 +177,42 @@ class ArticleWorkflow:
             List[Article]: A list of relevant articles.
         """
         self.logger.info("Starting the search_articles method with query: %s", query)
+        # First, search the title collection
+        self.vector_store.use_collection(name="title_collection")
+        title_results = self.vector_store.query_collection(query)
+        return title_results
+
+    def summarize_articles(self, article_type_not_other=True):
+        """
+        Summarize articles in the database.
+        If only_not_other is True, only summarizes articles where
+        article_type is not ArticleType.OTHER
+        Saves summary as a text file in the same directory as the article
+        (appends each new summary to the file)
+        """
+        self.logger.info("Starting the summarize_articles method")
+        # Step 1: Load articles from the SQLite database
+        articles = self.db_manager.find_all(sort_by=[("article_type", "ASC")])
+        # Step 2: Summarize articles
+        for article in articles:
+            if article_type_not_other and article.article_type == ArticleType.OTHER:
+                continue
+            summary = article.get_summary()
+            # Step 3: Save summary to file
+            with open("./data/summaries.txt", "a", encoding="utf-8") as file:
+                file.write(f"Title: {article.title}")
+                file.write("\n")
+                file.write(f"Type: {article.article_type.name}")
+                file.write("\n")
+                file.write(f"Summary:\n{summary}")
+                file.write("\n\n")
+
+    def write_podcast_script(self):
+        """
+        Read summaries from file and write to podcast script
+        """
+        with open("./data/summaries.txt", "r", encoding="utf-8") as file:
+            summaries = file.read()
+        script = generate_script(summaries)
+        with open("./data/script.txt", "w", encoding="utf-8") as file:
+            file.write(script)
