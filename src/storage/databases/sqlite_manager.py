@@ -102,10 +102,22 @@ class SQLiteManager(DatabaseManager):
             )
         return None
 
-    def find_all(self, limit: Optional[int] = None) -> list[Article]:
-        # pylint: disable=line-too-long
+    # pylint: disable=line-too-long
+    def find_all(
+        self,
+        limit: Optional[int] = None,
+        sort_by: Optional[list[tuple[str, str]]] = None,
+    ) -> list[Article]:
         # Base query
+        # pylint: disable=line-too-long
         query = "SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type FROM articles"
+
+        # If sort_by is provided, append the ORDER BY clause to the query
+        if sort_by:
+            order_by_clause = ", ".join(
+                [f"{field} {order}" for field, order in sort_by]
+            )
+            query += f" ORDER BY {order_by_clause}"
 
         # If a limit is provided, append the LIMIT clause to the query
         if limit is not None:
