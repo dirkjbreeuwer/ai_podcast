@@ -117,6 +117,7 @@ class Article:
         is_vectorized (bool): Indicates if the article has been vectorized.
         article_type (ArticleType): The type of the article.
         article_relevance (int): The relevance of the article.
+        summary (str): The summary of the article.
     """
 
     # Disabling the too many arguments warning because we want Article
@@ -141,6 +142,7 @@ class Article:
         # pylint: disable=unused-argument
         article_type: Optional[ArticleType] = None,
         article_relevance: Optional[int] = None,
+        summary: Optional[str] = None,
     ):
         """Initializes an Article instance with provided attributes."""
         self.url = url
@@ -159,6 +161,7 @@ class Article:
         self.is_vectorized = is_vectorized
         self.article_type = add_article_type(title)
         self.article_relevance = predict_article_relevance(title)
+        self.summary = summary
 
     def __repr__(self):
         """Returns a string representation of the Article instance."""

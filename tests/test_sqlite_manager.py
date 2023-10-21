@@ -79,6 +79,9 @@ class TestSQLiteManager(unittest.TestCase):
         article.title = "Updated Title"
         article.article_id = "1"  # Ensure this is the correct way to set the article ID
         article.is_vectorized = 1  # Set the is_vectorized attribute
+        article.article_type = ArticleType.OTHER
+        article.article_relevance = 100
+        article.summary = "Test Summary"
         self.db_manager.update(article)
         retrieved_article = self.db_manager.find_by_id(1)
         self.assertEqual(retrieved_article.title, "Updated Title")
