@@ -68,3 +68,29 @@ pytest ./tests/*
 This will run all the tests located in the `tests` directory. Make sure to run them after making any changes to the codebase to ensure everything is working as expected.
 
 > **Note**: Running these tests will invoke API calls to Apify and OpenAI. While the costs associated with these calls are minimal, please be aware that they might incur charges. Typically, the total cost should be less than $0.10. Always monitor your API usage to avoid unexpected charges.
+
+## Usage
+
+The AI Podcast tool is used via the Jupyter notebook `main.ipynb`. To generate your podcast, simply follow these steps:
+
+1. Open the `main.ipynb` notebook in Jupyter:
+
+2. Run all the cells in the notebook. The notebook is set up to guide you through the process of generating your podcast.
+
+3. Your output files should be in the ``./data`` directory
+
+
+## Roadmap
+
+Here is a list of features and enhancements we are currently working on or planning to add in the future:
+
+- [ ] User interface for running workflows and visualizing output.
+- [ ] Improved content ranking system.
+- [ ] Enhanced crawling capabilities.
+- [ ] Free alternatives to the crawler and summarizer (currently using OpenAI, which will always incur costs).
+- [ ] Optimizations such as re-downloading and re-calculating only once a week or day.
+- [ ] Human in the loop: the ability for users to select the final set of articles/content that goes into the summary.
+
+
+
+
