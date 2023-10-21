@@ -5,15 +5,23 @@ from typing import List, Dict, Optional
 from enum import IntEnum
 import uuid
 import os
+import logging
 
 # pylint: disable=import-error
 from dotenv import load_dotenv
-
-# pylint: disable=import-error
+import openai
 from magentic import prompt
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Check if the API key is loaded
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key is None:
+    logging.warning("OPENAI_API_KEY is not set.")
+else:
+    openai.api_key = api_key
+    logging.info("OPENAI_API_KEY is loaded.")
 
 # Set the environment variable
 os.environ["MAGENTIC_OPENAI_MODEL"] = "gpt-3.5-turbo"
@@ -108,6 +116,7 @@ class Article:
         id (str): A unique identifier for the article.
         is_vectorized (bool): Indicates if the article has been vectorized.
         article_type (ArticleType): The type of the article.
+        article_relevance (int): The relevance of the article.
     """
 
     # Disabling the too many arguments warning because we want Article
@@ -131,6 +140,7 @@ class Article:
         is_vectorized: bool = False,
         # pylint: disable=unused-argument
         article_type: Optional[ArticleType] = None,
+        article_relevance: Optional[int] = None,
     ):
         """Initializes an Article instance with provided attributes."""
         self.url = url
@@ -148,6 +158,7 @@ class Article:
         self._id = _id or str(uuid.uuid4())
         self.is_vectorized = is_vectorized
         self.article_type = add_article_type(title)
+        self.article_relevance = predict_article_relevance(title)
 
     def __repr__(self):
         """Returns a string representation of the Article instance."""
