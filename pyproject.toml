@@ -23,6 +23,9 @@ torch = "^2.0.1"
 transformers = { version = "^4.0", extras = ["torch"] }
 magentic = "^0.7.0"
 tiktoken = "^0.5.1"
+bs4 = "^0.0.1"
+streamlit = "^1.27.2"
+matplotlib = "^3.8.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -34,3 +37,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 postinstall = "scripts.post_install:main"
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
