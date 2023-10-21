@@ -259,3 +259,12 @@ class ChromaVectorStore(VectorStore):
             where_document=where_document,
             include=include,
         )
+
+    def list_collections(self) -> List[str]:
+        """
+        Lists all collections in Chroma.
+
+        Returns:
+            List[str]: A list of collection names.
+        """
+        return self.client.list_collections()

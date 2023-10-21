@@ -178,6 +178,24 @@ class TestChromaVectorStore(unittest.TestCase):
             # Delete the index files from the disk after testing
             shutil.rmtree(temp_dir)
 
+    def test_list_collections(self):
+        """Test listing all collections in Chroma."""
+        store = ChromaVectorStore(client_type="ephemeral")
+        collection_names = ["test_collection1", "test_collection2", "test_collection3"]
+        for name in collection_names:
+            store.create_collection(name=name)
+
+        listed_collections = store.list_collections()
+        listed_collection_names = [collection.name for collection in listed_collections]
+
+        for name in collection_names:
+            self.assertIn(
+                name, listed_collection_names, f"Collection {name} not listed."
+            )
+
+        for name in collection_names:
+            store.delete_collection(name=name)
+
 
 if __name__ == "__main__":
     unittest.main()
