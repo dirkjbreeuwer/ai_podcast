@@ -166,9 +166,6 @@ configs/*.yaml
 # Explicitly include template files
 !configs/*.template.yaml
 
-# Data files
-data/*
-!data/__init__.py
 
 
 
