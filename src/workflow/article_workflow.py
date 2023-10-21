@@ -46,16 +46,21 @@ class ArticleWorkflow:
         self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
         # Initialize the Chroma store with ephemeral storage
         self.vector_store = ChromaVectorStore(client_type="ephemeral")
-        # Create and use a collection in Chroma
-        # pylint: disable=line-too-long
-        self.vector_store.create_collection(
-            name="article_collection", metadata={"hnsw:space": "cosine"}
-        )
+        # Create and use a collection in Chroma for articles
+        collection_names = [
+            collection.name for collection in self.vector_store.list_collections()
+        ]
+        if "article_collection" not in collection_names:
+            self.vector_store.create_collection(
+                name="article_collection", metadata={"hnsw:space": "cosine"}
+            )
         self.vector_store.use_collection(name="article_collection")
+
         # Create and use a collection in Chroma for article titles
-        self.vector_store.create_collection(
-            name="title_collection", metadata={"hnsw:space": "cosine"}
-        )
+        if "title_collection" not in collection_names:
+            self.vector_store.create_collection(
+                name="title_collection", metadata={"hnsw:space": "cosine"}
+            )
         self.vector_store.use_collection(name="title_collection")
         # Initialize the database
         self.initialize_database()
