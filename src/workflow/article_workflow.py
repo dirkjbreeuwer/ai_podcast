@@ -198,26 +198,39 @@ class ArticleWorkflow:
         self.logger.info("Starting the summarize_articles method")
         # Step 1: Load articles from the SQLite database
         articles = self.db_manager.find_all(sort_by=[("article_type", "ASC")])
+        # Only summarize articles that have not yet been summarized
+        articles = [article for article in articles if article.summary is None]
         # Step 2: Summarize articles
         for article in articles:
             if article_type_not_other and article.article_type == ArticleType.OTHER:
                 continue
             summary = article.get_summary()
-            # Step 3: Save summary to file
-            with open("./data/summaries.txt", "a", encoding="utf-8") as file:
-                file.write(f"Title: {article.title}")
-                file.write("\n")
-                file.write(f"Type: {article.article_type.name}")
-                file.write("\n")
-                file.write(f"Summary:\n{summary}")
-                file.write("\n\n")
+            # Step 3: Save summary to the article in the database
+            article.summary = (
+                summary  # Assuming you have a summary attribute in your Article class
+            )
+            self.db_manager.update(article)
 
     def write_podcast_script(self):
         """
-        Read summaries from file and write to podcast script
+        Read summaries from database and write podcast script
         """
-        with open("./data/summaries.txt", "r", encoding="utf-8") as file:
-            summaries = file.read()
+        self.logger.info("Starting the write_podcast_script method")
+        # Step 1: Load articles from the SQLite database
+        articles = self.db_manager.find_articles_by_type_relevance(
+            excluded_type=ArticleType.OTHER
+        )
+        # Only load articles that have not yet been summarized
+        articles = [article for article in articles if article.summary is not None]
+        # Prepare summaries for script generation
+        # For every article get the title, type.value and summary, separated by a new line
+        # pylint: disable=line-too-long
+        summaries = [
+            f"Title: {article.title}\nType: {article.article_type.name}\nSummary:\n{article.summary}\n\n"
+            for article in articles
+        ]
+        # Step 2: Write podcast script
         script = generate_script(summaries)
-        with open("./data/script.txt", "w", encoding="utf-8") as file:
-            file.write(script)
+        # Save script to text file
+        with open("./data/script.txt", "w", encoding="utf-8") as script_file:
+            script_file.writelines(script)
