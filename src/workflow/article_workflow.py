@@ -211,6 +211,19 @@ class ArticleWorkflow:
             )
             self.db_manager.update(article)
 
+    def get_summarized_articles(self):
+        """
+        Get summarized articles from the database
+        """
+        self.logger.info("Starting the get_summarized_articles method")
+        # Step 1: Load articles from the SQLite database
+        articles = self.db_manager.find_articles_by_type_relevance(
+            excluded_type=ArticleType.OTHER
+        )
+        # Only load articles that have not yet been summarized
+        articles = [article for article in articles if article.summary is not None]
+        return articles
+
     def write_podcast_script(self):
         """
         Read summaries from database and write podcast script
