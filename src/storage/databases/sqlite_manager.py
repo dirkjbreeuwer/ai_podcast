@@ -154,9 +154,58 @@ class SQLiteManager(DatabaseManager):
         ]
 
     def find_by_criteria(self, criteria: dict) -> list[Article]:
-        # This method would require more complex SQL generation based on the criteria.
-        # For simplicity, I'm skipping the implementation here.
-        pass
+        """
+        Retrieve articles based on certain criteria.
+
+        Parameters:
+            criteria (dict): A dictionary of criteria to filter articles.
+
+        Returns:
+            list[Article]: A list of articles that match the criteria.
+        """
+
+    def find_articles_by_type_relevance(
+        self, excluded_type: ArticleType
+    ) -> list[Article]:
+        """
+        Retrieve articles from the database excluding a specific article type,
+        and order the results by article type and descending article relevance.
+
+        Parameters:
+            excluded_type (ArticleType): The type of article to be excluded from the results.
+
+        Returns:
+            list[Article]: A list of articles that match the criteria.
+        """
+        query = """
+        SELECT title, text, id, date, url, loaded_domain, author, description, keywords, lang, tags, image, is_vectorized, article_type, article_relevance, summary
+        FROM articles
+        WHERE article_type != ?
+        ORDER BY article_type, article_relevance DESC
+        """
+        self.cursor.execute(query, (excluded_type.value,))
+        results = self.cursor.fetchall()
+        return [
+            Article(
+                title=row[0],
+                text=row[1],
+                _id=row[2],
+                date=row[3],
+                url=row[4] if row[4] else None,
+                loaded_domain=row[5] if row[5] else None,
+                author=row[6].split(",") if row[6] else None,
+                description=row[7] if row[7] else None,
+                keywords=row[8] if row[8] else None,
+                lang=row[9] if row[9] else None,
+                tags=row[10].split(",") if row[10] else None,
+                image=row[11] if row[11] else None,
+                is_vectorized=row[12],
+                article_type=ArticleType(row[13]),
+                article_relevance=row[14],
+                summary=row[15],
+            )
+            for row in results
+        ]
 
     def mark_as_vectorized(self, article_id: int) -> None:
         """
