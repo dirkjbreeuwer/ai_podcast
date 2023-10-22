@@ -69,27 +69,47 @@ This will run all the tests located in the `tests` directory. Make sure to run t
 
 > **Note**: Running these tests will invoke API calls to Apify and OpenAI. While the costs associated with these calls are minimal, please be aware that they might incur charges. Typically, the total cost should be less than $0.10. Always monitor your API usage to avoid unexpected charges.
 
+
 ## Usage
 
-The AI Podcast tool is used via the Jupyter notebook `main.ipynb`. To generate your podcast, simply follow these steps:
+### Using Jupyter Notebook
 
-1. Open the `main.ipynb` notebook in Jupyter:
+The AI Podcast tool can be used via the Jupyter notebook `main.ipynb`. To generate your podcast, simply follow these steps:
+
+1. Open the `main.ipynb` notebook in Jupyter.
 
 2. Run all the cells in the notebook. The notebook is set up to guide you through the process of generating your podcast.
 
-3. Your output files should be in the ``./data`` directory
+3. Your output files should be in the `./data` directory.
+
+### Using Streamlit
+
+Alternatively, you can use the AI Podcast tool with Streamlit. To do so, follow these steps:
+
+1. Navigate to the project's root directory in your terminal or command prompt.
+
+2. Run the following command:
+
+```
+streamlit run ./src/ui/app.py
+```
+
+3. A new tab should open in your web browser with the Streamlit UI. Follow the instructions in the UI to generate your podcast.
 
 
 ## Roadmap
 
 Here is a list of features and enhancements we are currently working on or planning to add in the future:
 
-- [ ] User interface for running workflows and visualizing output.
-- [ ] Improved content ranking system.
-- [ ] Enhanced crawling capabilities.
+- [ ] WIP: User interface for running workflows and visualizing output.
 - [ ] Free alternatives to the crawler and summarizer (currently using OpenAI, which will always incur costs).
 - [ ] Optimizations such as re-downloading and re-calculating only once a week or day.
+- [ ] Improved content ranking system.
 - [ ] Human in the loop: the ability for users to select the final set of articles/content that goes into the summary.
+- Enhanced crawling capabilities:
+- [ ] Arxiv
+- [ ] Github
+- [ ] Youtube
 
 
 
