@@ -40,7 +40,7 @@ class ArticleWorkflow:
         Args:
             db_path (str): Path to the SQLite database.
         """
-        self.logger = get_logger(__name__)
+        self.logger = get_logger("my_logger")
         self.db_manager = SQLiteManager(db_path=relational_db_path)
         self.crawler = ApifyArticleCrawler("ApifyArticleCrawler", {})
         self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
@@ -88,16 +88,28 @@ class ArticleWorkflow:
             "Starting the crawl_and_store_articles method with URLs: %s", urls
         )
         crawled_data = self.crawler.batch_fetch(urls)
+        self.logger.info(
+            "Number of articles successfully crawled: %d", len(crawled_data)
+        )
 
         # Step 2: Transform crawled data into standardized Article format
+        self.logger.info("Transforming crawled data into standardized Article format")
         articles = []
         for data in crawled_data:
+            self.logger.info("Transforming data: %s", data)
             transformer = ApifyCrawlerOutputTransformer(data)
             article = transformer.transform(data)
+            self.logger.info("Transformed article: %s", article)
             articles.append(article)
+        self.logger.info(
+            "Number of articles successfully transformed: %d", len(articles)
+        )
 
         # Step 3: Store the standardized articles in the SQLite database
+        self.logger.info("Storing the standardized articles in the SQLite database")
         for article in articles:
+            article.get_article_type()
+            self.logger.info("Storing article: %s", article)
             self.db_manager.save(article)
 
         self.logger.info(
@@ -204,11 +216,7 @@ class ArticleWorkflow:
         for article in articles:
             if article_type_not_other and article.article_type == ArticleType.OTHER:
                 continue
-            summary = article.get_summary()
-            # Step 3: Save summary to the article in the database
-            article.summary = (
-                summary  # Assuming you have a summary attribute in your Article class
-            )
+            article.get_summary()
             self.db_manager.update(article)
 
     def get_summarized_articles(self):
