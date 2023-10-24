@@ -139,7 +139,6 @@ class Article:
         image: Optional[str] = None,
         videos: Optional[List[Dict[str, str]]] = None,
         is_vectorized: bool = False,
-        # pylint: disable=unused-argument
         article_type: Optional[ArticleType] = None,
         article_relevance: Optional[int] = None,
         summary: Optional[str] = None,
@@ -159,21 +158,48 @@ class Article:
         self.text = text
         self._id = _id or str(uuid.uuid4())
         self.is_vectorized = is_vectorized
-        self.article_type = add_article_type(title)
-        self.article_relevance = predict_article_relevance(title)
-        self.summary = summary
+        self._article_type = article_type
+        self._article_relevance = article_relevance
+        self._summary = summary
+
+        logging.info("Article instance created for title: %s", self.title)
 
     def __repr__(self):
         """Returns a string representation of the Article instance."""
         return f"<Article(title={self.title}, url={self.url}, date={self.date})>"
 
+    @property
+    def summary(self) -> str:
+        """Returns the stored summary without regenerating it."""
+        return self._summary
+
     def get_summary(self) -> str:
         """Returns a summary of the article"""
-        return summarize_article(self.text)
+        logging.info("Generating summary for article: %s", self.title)
+        self._summary = summarize_article(self.text)
+        return self._summary
 
-    def get_relevance(self) -> int:
+    @property
+    def article_type(self) -> ArticleType:
+        """Returns the stored article type without regenerating it."""
+        return self._article_type
+
+    def get_article_type(self) -> ArticleType:
+        """Returns the type of the article"""
+        logging.info("Classifying article type for: %s", self.title)
+        self._article_type = add_article_type(self.title)
+        return self._article_type
+
+    @property
+    def article_relevance(self) -> int:
+        """Returns the stored article relevance without regenerating it."""
+        return self._article_relevance
+
+    def get_article_relevance(self) -> int:
         """Returns the relevance of the article"""
-        return predict_article_relevance(self.title)
+        logging.info("Predicting relevance for article: %s", self.title)
+        self._article_relevance = predict_article_relevance(self.title)
+        return self._article_relevance
 
     @property
     def article_id(self):

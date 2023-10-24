@@ -38,12 +38,6 @@ class TestArticle(unittest.TestCase):
         )
         self.assertEqual(self.article.date, "2023-10-21")
 
-    def test_article_type(self):
-        """
-        Test the article_type attribute of the Article class.
-        """
-        self.assertEqual(self.article.article_type, ArticleType.FOUNDATION_MODEL)
-
     def test_get_summary(self):
         """
         Test the get_summary method of the Article class.
@@ -52,11 +46,18 @@ class TestArticle(unittest.TestCase):
         self.assertIsInstance(summary, str)
         self.assertTrue(len(summary.split("\n")) <= 5)
 
-    def test_get_relevance(self):
+    def test_get_article_type(self):
         """
-        Test the get_relevance method of the Article class.
+        Test the get_article_type method of the Article class.
         """
-        relevance = self.article.get_relevance()
+        article_type = self.article.get_article_type()
+        self.assertEqual(article_type, ArticleType.FOUNDATION_MODEL)
+
+    def test_get_article_relevance(self):
+        """
+        Test the get_article_relevance method of the Article class.
+        """
+        relevance = self.article.get_article_relevance()
         self.assertIsInstance(relevance, int)
         self.assertTrue(0 <= relevance <= 100)
 

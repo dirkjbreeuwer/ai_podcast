@@ -11,7 +11,7 @@ Usage:
 
 import unittest
 import os
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 from src.crawlers.data_structures.article import Article, ArticleType
 from src.storage.databases.sqlite_manager import SQLiteManager
 
@@ -42,21 +42,19 @@ class TestSQLiteManager(unittest.TestCase):
         """
         self.db_manager.close()
 
-    @patch("src.crawlers.data_structures.article.add_article_type")
-    def test_save_and_find_by_id(self, mock_add_article_type):
+    @patch.object(Article, "article_type", new_callable=PropertyMock)
+    def test_save_and_find_by_id(self, mock_article_type):
         """
         Test the save and find_by_id methods.
 
         This test validates that an article can be saved to the database and then retrieved
         by its ID. It also checks the default value of the is_vectorized attribute.
         """
-        mock_add_article_type.return_value = ArticleType.OTHER
-        # pylint: disable=line-too-long
+        mock_article_type.return_value = ArticleType.OTHER
         article = Article(
             title="Test Title",
             text="Test Text",
             date="2023-09-23",
-            article_type=ArticleType.OTHER,
         )
         self.db_manager.save(article)
         retrieved_article = self.db_manager.find_by_id(1)
@@ -65,44 +63,41 @@ class TestSQLiteManager(unittest.TestCase):
         self.assertEqual(retrieved_article.is_vectorized, 0)  # Check the default value
         self.assertEqual(retrieved_article.article_type, ArticleType.OTHER)
 
-    @patch("src.crawlers.data_structures.article.add_article_type")
-    def test_update(self, mock_add_article_type):
+    @patch.object(Article, "article_type", new_callable=PropertyMock)
+    def test_update(self, mock_article_type):
         """
         Test the update method.
 
         This test validates that an article's attributes can be updated in the database.
         It also checks the updated value of the is_vectorized attribute.
         """
-        mock_add_article_type.return_value = ArticleType.OTHER
+        mock_article_type.return_value = ArticleType.OTHER
         article = Article(title="Test Title", text="Test Text", date="2023-09-23")
         self.db_manager.save(article)
         article.title = "Updated Title"
         article.article_id = "1"  # Ensure this is the correct way to set the article ID
         article.is_vectorized = 1  # Set the is_vectorized attribute
-        article.article_type = ArticleType.OTHER
-        article.article_relevance = 100
-        article.summary = "Test Summary"
         self.db_manager.update(article)
         retrieved_article = self.db_manager.find_by_id(1)
         self.assertEqual(retrieved_article.title, "Updated Title")
         self.assertEqual(retrieved_article.is_vectorized, 1)  # Check the updated value
 
-    @patch("src.crawlers.data_structures.article.add_article_type")
-    def test_delete(self, mock_add_article_type):
+    @patch.object(Article, "article_type", new_callable=PropertyMock)
+    def test_delete(self, mock_article_type):
         """
         Test the delete method.
 
         This test validates that an article can be deleted from the database using its ID.
         """
-        mock_add_article_type.return_value = ArticleType.OTHER
+        mock_article_type.return_value = ArticleType.OTHER
         article = Article(title="Test Title", text="Test Text", date="2023-09-23")
         self.db_manager.save(article)
         self.db_manager.delete(1)
         retrieved_article = self.db_manager.find_by_id(1)
         self.assertIsNone(retrieved_article)
 
-    @patch("src.crawlers.data_structures.article.add_article_type")
-    def test_find_all(self, mock_add_article_type):
+    @patch.object(Article, "article_type", new_callable=PropertyMock)
+    def test_find_all(self, mock_article_type):
         """
         Test the find_all method.
 
@@ -110,7 +105,7 @@ class TestSQLiteManager(unittest.TestCase):
         the find_all method. It also checks the default value of the is_vectorized attribute
         for each saved article.
         """
-        mock_add_article_type.return_value = ArticleType.OTHER
+        mock_article_type.return_value = ArticleType.OTHER
         article1 = Article(title="Test Title 1", text="Test Text 1", date="2023-09-23")
         article2 = Article(title="Test Title 2", text="Test Text 2", date="2023-09-24")
         self.db_manager.save(article1)
@@ -122,12 +117,12 @@ class TestSQLiteManager(unittest.TestCase):
         self.assertEqual(articles[0].is_vectorized, 0)  # First article
         self.assertEqual(articles[1].is_vectorized, 0)  # Second article
 
-    @patch("src.crawlers.data_structures.article.add_article_type")
-    def test_load_database_from_disk(self, mock_add_article_type):
+    @patch.object(Article, "article_type", new_callable=PropertyMock)
+    def test_load_database_from_disk(self, mock_article_type):
         """
         Test the ability to load a database from disk after it has been closed.
         """
-        mock_add_article_type.return_value = ArticleType.OTHER
+        mock_article_type.return_value = ArticleType.OTHER
         # Step 1: Create a SQLite database on disk
         db_path = "test_db.sqlite3"
 
