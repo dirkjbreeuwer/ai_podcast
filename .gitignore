@@ -166,7 +166,18 @@ configs/*.yaml
 # Explicitly include template files
 !configs/*.template.yaml
 
+# SQLite database files
+*.sqlite3
+*.sqlite
 
+# Profiling files
+*.prof
 
+# Swap files
+*.swp
 
+# Experiments ipynb
+experiments.ipynb
 
+# Other files
+queries.sql

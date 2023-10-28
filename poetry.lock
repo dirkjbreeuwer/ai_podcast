@@ -2589,6 +2589,17 @@ sentry = ["django", "sentry-sdk"]
 test = ["coverage", "flake8", "freezegun (==0.3.15)", "mock (>=2.0.0)", "pylint", "pytest"]
 
 [[package]]
+name = "profilehooks"
+version = "1.12.0"
+description = "Decorators for profiling/timing/tracing individual functions"
+optional = false
+python-versions = "*"
+files = [
+    {file = "profilehooks-1.12.0-py2.py3-none-any.whl", hash = "sha256:dc87f319c9596b8c50fd374e3c08c51fa29a61553f1d9281482e4ca31829b021"},
+    {file = "profilehooks-1.12.0.tar.gz", hash = "sha256:05b87589df8a8c630fd701bae6008cc1cfff4457bd0064887ad25248327a5ba3"},
+]
+
+[[package]]
 name = "prompt-toolkit"
 version = "3.0.39"
 description = "Library for building powerful interactive command lines in Python"
@@ -3960,13 +3971,13 @@ full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart", "pyyam
 
 [[package]]
 name = "streamlit"
-version = "1.27.2"
+version = "1.28.0"
 description = "A faster way to build and share data apps"
 optional = false
 python-versions = ">=3.8, !=3.9.7"
 files = [
-    {file = "streamlit-1.27.2-py2.py3-none-any.whl", hash = "sha256:726dd2bee638e0976aa72552900648d4ead4be28e30235355f10c25062669369"},
-    {file = "streamlit-1.27.2.tar.gz", hash = "sha256:33f9ae0de5b7d59cd7daba87754c54ec837a76c24acfc41d1f8e5148f20903ee"},
+    {file = "streamlit-1.28.0-py2.py3-none-any.whl", hash = "sha256:6827f14fe4a2658851b25de70ccf5e4aa25650a029ba4f0a9cc6fc2ba2a1b97d"},
+    {file = "streamlit-1.28.0.tar.gz", hash = "sha256:be6fd240e290be2a79857b1ad7822b53a3c90f15cf6ce97d89ebf4d802d7edb1"},
 ]
 
 [package.dependencies]
@@ -4823,4 +4834,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e2032572e15a5a63d0ac017af6b0c0be0ec8e727ea32fa84ae3ee3fc3a5a7231"
+content-hash = "02633adb793d2f8c5c90b741ca7061e09a4e9e29057a182c2975046498e492c0"

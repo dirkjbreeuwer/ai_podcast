@@ -24,8 +24,9 @@ transformers = { version = "^4.0", extras = ["torch"] }
 magentic = "^0.7.0"
 tiktoken = "^0.5.1"
 bs4 = "^0.0.1"
-streamlit = "^1.27.2"
+streamlit = "^1.28.0"
 matplotlib = "^3.8.0"
+profilehooks = "^1.12.0"
 
 
 [tool.poetry.group.dev.dependencies]
