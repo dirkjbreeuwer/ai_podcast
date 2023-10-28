@@ -101,7 +101,7 @@ streamlit run ./src/ui/app.py
 
 Here is a list of features and enhancements we are currently working on or planning to add in the future:
 
-- [ ] WIP: User interface for running workflows and visualizing output.
+- [X] WIP: User interface for running workflows and visualizing output.
 - [ ] Free alternatives to the crawler and summarizer (currently using OpenAI, which will always incur costs).
 - [ ] Optimizations such as re-downloading and re-calculating only once a week or day.
 - [ ] Improved content ranking system.

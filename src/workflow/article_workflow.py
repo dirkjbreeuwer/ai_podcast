@@ -10,6 +10,10 @@ Available methods:
 """
 from typing import Optional
 
+# pylint: disable=import-error
+from profilehooks import profile
+
+
 from src.crawlers.data_structures.article import ArticleType
 from src.crawlers.apify_crawler import ApifyArticleCrawler
 from src.crawlers.transformers.apify_transformer import ApifyCrawlerOutputTransformer
@@ -73,6 +77,7 @@ class ArticleWorkflow:
         self.logger.info("Initializing the SQLite database schema.")
         self.db_manager.initialize_schema()
 
+    @profile(filename="./profile_results.prof", immediate=True)
     def crawl_and_store_articles(self, urls):
         """
         Fetch articles from online sources, standardize them, and store them in the SQLite database.
@@ -199,25 +204,48 @@ class ArticleWorkflow:
         title_results = self.vector_store.query_collection(query)
         return title_results
 
-    def summarize_articles(self, article_type_not_other=True):
+    @profile(filename="./profile_results.prof", immediate=True)
+    def summarize_articles(self, article_type_not_other=True, progress_callback=None):
+        # pylint: disable=line-too-long
         """
         Summarize articles in the database.
         If only_not_other is True, only summarizes articles where
         article_type is not ArticleType.OTHER
         Saves summary as a text file in the same directory as the article
         (appends each new summary to the file)
+
+        Args:
+            article_type_not_other (bool): If True, only summarize articles where article_type is not ArticleType.OTHER.
+            progress_callback (Optional[Callable[[int, int], None]]): A callback function to update progress.
         """
         self.logger.info("Starting the summarize_articles method")
         # Step 1: Load articles from the SQLite database
         articles = self.db_manager.find_all(sort_by=[("article_type", "ASC")])
         # Only summarize articles that have not yet been summarized
         articles = [article for article in articles if article.summary is None]
+
+        # Count the number of articles to be summarized
+        num_articles_to_summarize = len(articles)
+        if article_type_not_other:
+            num_articles_to_summarize = len(
+                [
+                    article
+                    for article in articles
+                    if article.article_type != ArticleType.OTHER
+                ]
+            )
+
         # Step 2: Summarize articles
-        for article in articles:
+        for i, article in enumerate(articles):
             if article_type_not_other and article.article_type == ArticleType.OTHER:
                 continue
             article.get_summary()
             self.db_manager.update(article)
+
+            if progress_callback is not None:
+                progress_callback(
+                    i + 1, num_articles_to_summarize
+                )  # Call the progress callback function
 
     def get_summarized_articles(self):
         """
