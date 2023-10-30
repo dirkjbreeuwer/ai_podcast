@@ -24,7 +24,7 @@ Usage:
 """
 
 from abc import ABC, abstractmethod
-from ..data_structures.article import Article
+from src.crawlers.data_structures.article import Article
 
 
 # This is a base class so its OK to have too few public methods

@@ -23,7 +23,7 @@ import requests
 
 # pylint: disable=E0401
 from decouple import config
-from .base_crawler import Crawler
+from src.crawlers.base_crawler import Crawler
 
 
 class ApifyArticleCrawler(Crawler):

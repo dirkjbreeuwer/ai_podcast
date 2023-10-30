@@ -2,16 +2,16 @@
 Module for transforming Apify's web scrape output into the standardized Article data structure.
 
 Classes:
-    - ApifyCrawlerOutputTransformer: Transforms Apify's output to the `Article` format.
+    - ApifyArticleCrawlerOutputTransformer: Transforms Apify's output to the `Article` format.
 """
 
-from .base_transformer import CrawlerOutputTransformer
+from src.crawlers.transformers.base_transformer import CrawlerOutputTransformer
 
-from ..data_structures.article import Article
+from src.crawlers.data_structures.article import Article
 
 
 # pylint: disable=too-few-public-methods
-class ApifyCrawlerOutputTransformer(CrawlerOutputTransformer):
+class ApifyArticleCrawlerOutputTransformer(CrawlerOutputTransformer):
     """
     Transforms the output from Apify's web scrape into the Article data structure.
     """

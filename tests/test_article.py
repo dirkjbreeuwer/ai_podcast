@@ -50,14 +50,14 @@ class TestArticle(unittest.TestCase):
         """
         Test the get_article_type method of the Article class.
         """
-        article_type = self.article.get_article_type()
+        article_type = self.article.get_type()
         self.assertEqual(article_type, ArticleType.FOUNDATION_MODEL)
 
     def test_get_article_relevance(self):
         """
         Test the get_article_relevance method of the Article class.
         """
-        relevance = self.article.get_article_relevance()
+        relevance = self.article.get_relevance()
         self.assertIsInstance(relevance, int)
         self.assertTrue(0 <= relevance <= 100)
 

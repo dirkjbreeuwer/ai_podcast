@@ -16,7 +16,9 @@ from profilehooks import profile
 
 from src.crawlers.data_structures.article import ArticleType
 from src.crawlers.apify_crawler import ApifyArticleCrawler
-from src.crawlers.transformers.apify_transformer import ApifyCrawlerOutputTransformer
+from src.crawlers.transformers.apify_article_transformer import (
+    ApifyArticleCrawlerOutputTransformer,
+)
 from src.storage.databases.sqlite_manager import SQLiteManager
 from src.search_and_retrieval.chroma_vector_store import ChromaVectorStore
 from src.search_and_retrieval.preprocessing_services.chunk_service import (
@@ -102,7 +104,7 @@ class ArticleWorkflow:
         articles = []
         for data in crawled_data:
             self.logger.info("Transforming data: %s", data)
-            transformer = ApifyCrawlerOutputTransformer(data)
+            transformer = ApifyArticleCrawlerOutputTransformer(data)
             article = transformer.transform(data)
             self.logger.info("Transformed article: %s", article)
             articles.append(article)
@@ -113,7 +115,7 @@ class ArticleWorkflow:
         # Step 3: Store the standardized articles in the SQLite database
         self.logger.info("Storing the standardized articles in the SQLite database")
         for article in articles:
-            article.get_article_type()
+            article.get_type()
             self.logger.info("Storing article: %s", article)
             self.db_manager.save(article)
 

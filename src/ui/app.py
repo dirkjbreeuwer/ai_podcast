@@ -42,7 +42,7 @@ class StreamlitUI:
         UI components for crawling and storing articles.
         """
         st.subheader("Crawl and Store Articles")
-        default_url = "https://techcrunch.com/category/artificial-intelligence/"
+        default_url = "https://techcrunch.com/category/artificial-intelligence/,"
         urls = st.text_area(
             "Enter URLs to crawl, separated by commas:", value=default_url
         )

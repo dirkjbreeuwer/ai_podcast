@@ -1,9 +1,9 @@
 """
 This module defines the data structure for representing an article scraped from the web.
 """
+
 from typing import List, Dict, Optional
 from enum import IntEnum
-import uuid
 import os
 import logging
 
@@ -11,6 +11,8 @@ import logging
 from dotenv import load_dotenv
 import openai
 from magentic import prompt
+
+from src.crawlers.data_structures.content import Content
 
 # Load environment variables from .env file
 load_dotenv()
@@ -97,7 +99,7 @@ def predict_article_relevance(article_title: str) -> int:
 
 
 # pylint: disable=R0902
-class Article:
+class Article(Content):  # Here we inherit from Content(ABC)
     """
     Represents an article scraped from the web.
 
@@ -144,19 +146,22 @@ class Article:
         summary: Optional[str] = None,
     ):
         """Initializes an Article instance with provided attributes."""
-        self.url = url
-        self.loaded_domain = loaded_domain
-        self.title = title
-        self.date = date
-        self.author = author
-        self.description = description
-        self.keywords = keywords
-        self.lang = lang
-        self.tags = tags
-        self.image = image
+        # Here we need to call the __init__ method of the parent class
+        super().__init__(
+            title,
+            text,
+            date,
+            _id,
+            url,
+            loaded_domain,
+            author,
+            description,
+            keywords,
+            lang,
+            tags,
+            image,
+        )
         self.videos = videos
-        self.text = text
-        self._id = _id or str(uuid.uuid4())
         self.is_vectorized = is_vectorized
         self._article_type = article_type
         self._article_relevance = article_relevance
@@ -184,7 +189,7 @@ class Article:
         """Returns the stored article type without regenerating it."""
         return self._article_type
 
-    def get_article_type(self) -> ArticleType:
+    def get_type(self) -> ArticleType:
         """Returns the type of the article"""
         logging.info("Classifying article type for: %s", self.title)
         self._article_type = add_article_type(self.title)
@@ -195,7 +200,7 @@ class Article:
         """Returns the stored article relevance without regenerating it."""
         return self._article_relevance
 
-    def get_article_relevance(self) -> int:
+    def get_relevance(self) -> int:
         """Returns the relevance of the article"""
         logging.info("Predicting relevance for article: %s", self.title)
         self._article_relevance = predict_article_relevance(self.title)

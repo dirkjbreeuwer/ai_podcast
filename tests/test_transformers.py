@@ -1,24 +1,27 @@
 """
-Unit tests for the ApifyCrawlerOutputTransformer class.
+Unit tests for the ApifyArticleCrawlerOutputTransformer class.
 
 This module contains tests that validate the functionality of the
-ApifyCrawlerOutputTransformer class, ensuring that it correctly transforms
+ApifyArticleCrawlerOutputTransformer class, ensuring that it correctly transforms
 the raw output from Apify's scrape into the standardized Article data structure.
 
 Classes:
-    TestApifyCrawlerOutputTransformer: Contains tests for the ApifyCrawlerOutputTransformer class.
+    TestApifyArticleCrawlerOutputTransformer: Contains tests for the
+    ApifyArticleCrawlerOutputTransformer class.
 
 Usage:
     pytest path_to_this_module
 """
 
 import unittest
-from src.crawlers.transformers.apify_transformer import ApifyCrawlerOutputTransformer
+from src.crawlers.transformers.apify_article_transformer import (
+    ApifyArticleCrawlerOutputTransformer,
+)
 from src.crawlers.data_structures.article import Article
 
 
-class TestApifyCrawlerOutputTransformer(unittest.TestCase):
-    """Tests for the ApifyCrawlerOutputTransformer class."""
+class TestApifyArticleCrawlerOutputTransformer(unittest.TestCase):
+    """Tests for the ApifyArticleCrawlerOutputTransformer class."""
 
     def setUp(self):
         """Initialize the transformer and sample data for testing."""
@@ -28,7 +31,7 @@ class TestApifyCrawlerOutputTransformer(unittest.TestCase):
             "date": "2023-09-07T13:00:00.000Z",
             "text": "This is a long string ot text about robots.",
         }
-        self.transformer = ApifyCrawlerOutputTransformer(self.sample_data)
+        self.transformer = ApifyArticleCrawlerOutputTransformer(self.sample_data)
 
     def test_transform(self):
         """Test the transformation of sample data to the Article format."""
