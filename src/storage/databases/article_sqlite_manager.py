@@ -14,7 +14,7 @@ from src.crawlers.data_structures.article import Article, ArticleType
 from .database_manager import DatabaseManager
 
 
-class SQLiteManager(DatabaseManager):
+class ArticleSQLiteManager(DatabaseManager):
     """
     SQLiteManager: Specialized operations for SQLite.
 

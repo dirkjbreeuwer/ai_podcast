@@ -13,7 +13,7 @@ import unittest
 import os
 from unittest.mock import PropertyMock, patch
 from src.crawlers.data_structures.article import Article, ArticleType
-from src.storage.databases.sqlite_manager import SQLiteManager
+from src.storage.databases.article_sqlite_manager import ArticleSQLiteManager
 
 
 class TestSQLiteManager(unittest.TestCase):
@@ -31,7 +31,7 @@ class TestSQLiteManager(unittest.TestCase):
         This method initializes a new SQLite database in memory and creates the articles table
         for testing purposes before each test case.
         """
-        self.db_manager = SQLiteManager(":memory:")
+        self.db_manager = ArticleSQLiteManager(":memory:")
         self.db_manager.initialize_schema()
 
     def tearDown(self):
@@ -129,7 +129,7 @@ class TestSQLiteManager(unittest.TestCase):
         if os.path.exists(db_path):
             os.remove(db_path)
 
-        db_manager = SQLiteManager(db_path)
+        db_manager = ArticleSQLiteManager(db_path)
         db_manager.initialize_schema()  # Initialize the database
 
         # Step 2: Add some data to it
@@ -143,7 +143,7 @@ class TestSQLiteManager(unittest.TestCase):
         del db_manager  # Ensure the original manager is no longer in use
 
         # Step 4: Reopen the database from the disk location
-        reopened_db_manager = SQLiteManager(db_path)
+        reopened_db_manager = ArticleSQLiteManager(db_path)
 
         # Step 5: Verify that the data added in step 2 is still present
         retrieved_article = reopened_db_manager.find_by_id(1)

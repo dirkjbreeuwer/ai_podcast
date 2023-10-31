@@ -19,7 +19,7 @@ from src.crawlers.apify_crawler import ApifyArticleCrawler
 from src.crawlers.transformers.apify_article_transformer import (
     ApifyArticleCrawlerOutputTransformer,
 )
-from src.storage.databases.article_sqlite_manager import SQLiteManager
+from src.storage.databases.article_sqlite_manager import ArticleSQLiteManager
 from src.search_and_retrieval.chroma_vector_store import ChromaVectorStore
 from src.search_and_retrieval.preprocessing_services.chunk_service import (
     LangChainChunkingService,
@@ -47,7 +47,7 @@ class ArticleWorkflow:
             db_path (str): Path to the SQLite database.
         """
         self.logger = get_logger("my_logger")
-        self.db_manager = SQLiteManager(db_path=relational_db_path)
+        self.db_manager = ArticleSQLiteManager(db_path=relational_db_path)
         self.crawler = ApifyArticleCrawler("ApifyArticleCrawler", {})
         self.chunk_service = LangChainChunkingService(chunk_size=500, chunk_overlap=100)
         # Initialize the Chroma store with ephemeral storage
