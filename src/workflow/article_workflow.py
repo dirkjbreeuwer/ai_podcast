@@ -19,7 +19,7 @@ from src.crawlers.apify_crawler import ApifyArticleCrawler
 from src.crawlers.transformers.apify_article_transformer import (
     ApifyArticleCrawlerOutputTransformer,
 )
-from src.storage.databases.sqlite_manager import SQLiteManager
+from src.storage.databases.article_sqlite_manager import SQLiteManager
 from src.search_and_retrieval.chroma_vector_store import ChromaVectorStore
 from src.search_and_retrieval.preprocessing_services.chunk_service import (
     LangChainChunkingService,
